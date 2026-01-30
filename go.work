@@ -1,0 +1,9 @@
+go 1.24.1
+
+use (
+	./define
+	./servers/client
+	./servers/mediaServer
+	./servers/turnServer
+	./serviceUtil
+)
