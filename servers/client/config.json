@@ -1,0 +1,21 @@
+{
+  "server": {
+    "clientPort": 8080,
+    "mediaServer": {
+      "address": "14.14.14.2",
+      "port": 8083
+    },
+    "turnServer": {
+      "port": 8888
+    }
+  },
+  "streamList": [
+    {
+      "name": "test",
+      "ip": "14.14.14.7",
+      "rtspURL": "rtsp://admin:password@14.14.14.7:5544/h264.sdp",
+      "streamID": "d2129943-c34d-4bb5-5ed8-0d131e5a7f72",
+      "recording": false
+    }
+  ]
+}

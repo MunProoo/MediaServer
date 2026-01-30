@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.title}}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Media Server Client</h1>
+            <nav>
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="#" id="coreLiveViewLink">LiveView</a></li>
+                    <li><a href="#" id="streamsLink">Streams</a></li>
+                    <li><a href="#settings">Settings</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <section id="dashboard">
+                <h2>Dashboard</h2>
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <h3>Active Streams</h3>
+                        <p class="stat-value" id="activeStreams">0</p>
+                    </div>
+                    <div class="card">
+                        <h3>Total Views</h3>
+                        <p class="stat-value" id="totalViews">0</p>
+                    </div>
+                    <div class="card">
+                        <h3>Server Status</h3>
+                        <p class="stat-value" id="serverStatus">Checking...</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="streams">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Streams</h2>
+                    <button class="btn btn-primary" onclick="showAddStreamModal()">+ Add Stream</button>
+                </div>
+                <div id="streamList" class="stream-list">
+                    <!-- Stream items will be loaded here -->
+                </div>
+            </section>
+
+            <section id="settings">
+                <h2>Settings</h2>
+                <div class="settings-form">
+                    <form id="settingsForm">
+                        <div class="form-group">
+                            <label for="serverUrl">Server URL</label>
+                            <input type="text" id="serverUrl" name="serverUrl" placeholder="http://localhost:8083">
+                        </div>
+                        <div class="form-group">
+                            <label for="apiKey">API Key</label>
+                            <input type="password" id="apiKey" name="apiKey" placeholder="Enter API key">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Settings</button>
+                    </form>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 Media Server Client. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <!-- Stream Modal -->
+    <div id="streamModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeStreamModal()">&times;</span>
+            <h2 id="modalTitle">Add Stream</h2>
+            <form id="streamForm">
+                <input type="hidden" id="currentStreamID" value="">
+                <div class="form-group">
+                    <label for="streamName">Name *</label>
+                    <input type="text" id="streamName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="streamIP">IP Address *</label>
+                    <input type="text" id="streamIP" name="ip" required>
+                </div>
+                <div class="form-group">
+                    <label for="streamRtspURL">RTSP URL *</label>
+                    <input type="text" id="streamRtspURL" name="rtspURL" required placeholder="rtsp://ip:port/stream">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeStreamModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
+

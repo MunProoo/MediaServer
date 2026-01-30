@@ -35,7 +35,7 @@ func initMediaSSLgen(WCServerAddress string) (sslgen *sslgenInfo) {
 	subject := pkix.Name{
 		Organization:       []string{"MJY Co."},
 		OrganizationalUnit: []string{"RND"},
-		CommonName:         "Alpeta project",
+		CommonName:         "mjy project",
 	}
 
 	template := x509.Certificate{
@@ -51,13 +51,13 @@ func initMediaSSLgen(WCServerAddress string) (sslgen *sslgenInfo) {
 	pk, _ := rsa.GenerateKey(rand.Reader, 2048)
 	derBytes, _ := x509.CreateCertificate(rand.Reader, &template, &template, &pk.PublicKey, pk)
 	sslgen = &sslgenInfo{}
-	sslgen.certpemfilepath = tmpPath + "/AlpetaMediaCertificate.pem"
+	sslgen.certpemfilepath = tmpPath + "/MediaCertificate.pem"
 	if _, err := os.Stat(sslgen.certpemfilepath); os.IsNotExist(err) { // 없으면 생성
 		certOut, _ := os.Create(sslgen.certpemfilepath)
 		pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 		certOut.Close()
 	}
-	sslgen.keypemfilepath = tmpPath + "/AlpetaMediaPrivateKey.pem"
+	sslgen.keypemfilepath = tmpPath + "/MediaPrivateKey.pem"
 	if _, err := os.Stat(sslgen.keypemfilepath); os.IsNotExist(err) { // 없으면 생성
 		keyOut, _ := os.Create(sslgen.keypemfilepath)
 		pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(pk)})

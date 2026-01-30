@@ -1,23 +1,26 @@
 {
   "channel_defaults": {},
   "server": {
-    "debug": true,
+    "debug": false,
     "ffmpeg_path": "./external_tools/",
     "http_debug": false,
     "http_demo": true,
     "http_dir": "media_web",
-    "http_login": "admin",
-    "http_password": "admin",
+    "http_login": "mjy",
+    "http_password": "mjy",
     "http_port": ":8083",
-    "https": false,
+    "https": true,
     "https_auto_tls": false,
     "https_auto_tls_name": "",
     "https_cert": "server.crt",
     "https_key": "server.key",
     "https_port": ":443",
-    "ice_credential": "",
-    "ice_servers": [],
-    "ice_username": "",
+    "ice_credential": "mjy",
+    "ice_servers": [
+      "turn:14.14.14.2:8888",
+      "turn:14.14.14.2:8888?transport=tcp"
+    ],
+    "ice_username": "mjy",
     "log_level": "panic",
     "maintenance": {
       "base_root": ".",
@@ -35,16 +38,7 @@
     "webrtc_port_min": 49152
   },
   "streams": {
-    "ef3d954d-73a3-4255-869c-929d5eb7b0fc": {
-      "channels": {
-        "0": {
-          "on_demand": true,
-          "url": "rtsp://14.14.14.7:5544/h264.sdp"
-        }
-      },
-      "name": "test"
-    },
-    "f5e26069-9002-4335-7518-bb79ac74687b": {
+    "d2129943-c34d-4bb5-5ed8-0d131e5a7f72": {
       "channels": {
         "0": {
           "name": "ch1",
@@ -52,7 +46,7 @@
           "url": "rtsp://admin:password@14.14.14.7:5544/h264.sdp"
         }
       },
-      "name": "Premium"
+      "name": "test"
     }
   }
 }
