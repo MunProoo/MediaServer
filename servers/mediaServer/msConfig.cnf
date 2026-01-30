@@ -1,0 +1,58 @@
+{
+  "channel_defaults": {},
+  "server": {
+    "debug": true,
+    "ffmpeg_path": "./external_tools/",
+    "http_debug": false,
+    "http_demo": true,
+    "http_dir": "media_web",
+    "http_login": "admin",
+    "http_password": "admin",
+    "http_port": ":8083",
+    "https": false,
+    "https_auto_tls": false,
+    "https_auto_tls_name": "",
+    "https_cert": "server.crt",
+    "https_key": "server.key",
+    "https_port": ":443",
+    "ice_credential": "",
+    "ice_servers": [],
+    "ice_username": "",
+    "log_level": "panic",
+    "maintenance": {
+      "base_root": ".",
+      "default_safety_free_space": 5,
+      "disk_check_interval": 1,
+      "retention_capacity": 500,
+      "retention_days": 30
+    },
+    "rtsp_port": ":5541",
+    "token": {
+      "backend": "",
+      "enable": false
+    },
+    "webrtc_port_max": 49220,
+    "webrtc_port_min": 49152
+  },
+  "streams": {
+    "ef3d954d-73a3-4255-869c-929d5eb7b0fc": {
+      "channels": {
+        "0": {
+          "on_demand": true,
+          "url": "rtsp://14.14.14.7:5544/h264.sdp"
+        }
+      },
+      "name": "test"
+    },
+    "f5e26069-9002-4335-7518-bb79ac74687b": {
+      "channels": {
+        "0": {
+          "name": "ch1",
+          "on_demand": true,
+          "url": "rtsp://admin:password@14.14.14.7:5544/h264.sdp"
+        }
+      },
+      "name": "Premium"
+    }
+  }
+}

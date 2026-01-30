@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .serverTitle }} - 모니터링 대시보드</title>
+    <link rel="stylesheet" href="/static/plugins/fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/adminlte.min.css">
+    <style>
+        /* 아이콘을 CSS로 직접 구현 (저작권 문제 없음) */
+        .icon {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            text-align: center;
+        }
+        .icon-chart::before { content: "📊"; }
+        .icon-home::before { content: "🏠"; }
+        .icon-video::before { content: "📹"; }
+        .icon-dashboard::before { content: "📈"; }
+        .icon-settings::before { content: "⚙️"; }
+        .icon-info::before { content: "ℹ️"; }
+        .icon-stream::before { content: "📡"; }
+        .icon-check::before { content: "✓"; }
+        .icon-users::before { content: "👥"; }
+        .icon-record::before { content: "⏺"; }
+        .icon-cpu::before { content: "🖥️"; }
+        .icon-memory::before { content: "💾"; }
+        .icon-disk::before { content: "💿"; }
+        .icon-network::before { content: "🌐"; }
+        .icon-sync::before { content: "🔄"; }
+        .icon-up::before { content: "↑"; }
+        .icon-down::before { content: "↓"; }
+        .icon-circle::before { content: "●"; }
+        .icon-bars::before { content: "☰"; }
+        
+    <style>
+        body {
+            background-color: #0f1419;
+            color: #e4e6eb;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar {
+            background-color: #1a1f2e !important;
+            border-bottom: 2px solid #2a3f5f;
+        }
+        .navbar-brand {
+            color: #4fc3f7 !important;
+            font-weight: bold;
+        }
+        .card {
+            background-color: #1a1f2e;
+            border: 1px solid #2a3f5f;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .card-header {
+            background-color: #243447;
+            border-bottom: 1px solid #2a3f5f;
+            font-weight: bold;
+            color: #4fc3f7;
+        }
+        .card-body {
+            color: #e4e6eb;
+        }
+        .metric-card {
+            transition: transform 0.2s;
+        }
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .metric-label {
+            color: #8ab4f8;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+        .progress {
+            height: 25px;
+            background-color: #0a0e1a;
+        }
+        .progress-bar {
+            font-weight: bold;
+            line-height: 25px;
+        }
+        .alert-critical {
+            background-color: #5a1f1f;
+            border-color: #d32f2f;
+            color: #ffcdd2;
+        }
+        .alert-warning {
+            background-color: #5a4f1f;
+            border-color: #f57c00;
+            color: #ffecb3;
+        }
+        .alert-info {
+            background-color: #1f3a5a;
+            border-color: #1976d2;
+            color: #bbdefb;
+        }
+        .stream-table {
+            background-color: #1a1f2e;
+        }
+        .stream-table th {
+            background-color: #243447;
+            color: #4fc3f7;
+            border-color: #2a3f5f;
+        }
+        .stream-table td {
+            border-color: #2a3f5f;
+            color: #e4e6eb;
+        }
+        .badge-online {
+            background-color: #2e7d32;
+            color: white;
+        }
+        .badge-offline {
+            background-color: #757575;
+            color: white;
+        }
+        .badge-recording {
+            background-color: #c62828;
+            color: white;
+            animation: blink 1.5s infinite;
+        }
+        @keyframes blink {
+            0%, 50%, 100% { opacity: 1; }
+            25%, 75% { opacity: 0.5; }
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+        .icon-metric {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            opacity: 0.7;
+        }
+        .icon-cpu { color: #4fc3f7; }
+        .icon-memory { color: #9c27b0; }
+        .icon-disk { color: #ff9800; }
+        .icon-network { color: #4caf50; }
+        .refresh-info {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #243447;
+            border: 1px solid #2a3f5f;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 0.85rem;
+        }
+        .summary-box {
+            text-align: center;
+            padding: 15px;
+        }
+        .summary-box i {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .uptime-badge {
+            background-color: #1565c0;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <span class="icon icon-chart"></span> {{ .serverTitle }}
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><span class="icon icon-home"></span> 홈</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/pages/stream/list"><span class="icon icon-video"></span> 스트림 관리</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/monitoring/dashboard"><span class="icon icon-dashboard"></span> 모니터링</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/pages/settings"><span class="icon icon-settings"></span> 설정</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- 경고 알림 영역 -->
+        <div id="alerts-container"></div>
+
+        <!-- 시스템 요약 -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="icon icon-info"></span> 시스템 요약
+                        <span class="uptime-badge float-end" id="uptime">업타임 로딩중...</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 summary-box">
+                                <span class="icon icon-stream" style="font-size: 2rem;"></span>
+                                <div class="metric-value" id="total-streams">-</div>
+                                <div class="metric-label">총 스트림</div>
+                            </div>
+                            <div class="col-md-3 summary-box">
+                                <span class="icon icon-check" style="font-size: 2rem; color: #4caf50;"></span>
+                                <div class="metric-value" id="online-streams">-</div>
+                                <div class="metric-label">온라인</div>
+                            </div>
+                            <div class="col-md-3 summary-box">
+                                <span class="icon icon-users" style="font-size: 2rem;"></span>
+                                <div class="metric-value" id="total-clients">-</div>
+                                <div class="metric-label">연결된 클라이언트</div>
+                            </div>
+                            <div class="col-md-3 summary-box">
+                                <span class="icon icon-record" style="font-size: 2rem; color: #f44336;"></span>
+                                <div class="metric-value" id="recording-channels">-</div>
+                                <div class="metric-label">녹화 중</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 시스템 메트릭 -->
+        <div class="row">
+            <!-- CPU -->
+            <div class="col-md-3">
+                <div class="card metric-card">
+                    <div class="card-body text-center">
+                        <span class="icon icon-cpu icon-metric"></span>
+                        <div class="metric-label">CPU 사용률</div>
+                        <div class="metric-value" id="cpu-usage">-</div>
+                        <div class="progress">
+                            <div id="cpu-progress" class="progress-bar" role="progressbar" style="width: 0%">0%</div>
+                        </div>
+                        <small id="cpu-cores" class="text-muted">-</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Memory -->
+            <div class="col-md-3">
+                <div class="card metric-card">
+                    <div class="card-body text-center">
+                        <span class="icon icon-memory icon-metric"></span>
+                        <div class="metric-label">메모리 사용률</div>
+                        <div class="metric-value" id="memory-usage">-</div>
+                        <div class="progress">
+                            <div id="memory-progress" class="progress-bar" role="progressbar" style="width: 0%">0%</div>
+                        </div>
+                        <small id="memory-info" class="text-muted">-</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Disk -->
+            <div class="col-md-3">
+                <div class="card metric-card">
+                    <div class="card-body text-center">
+                        <span class="icon icon-disk icon-metric"></span>
+                        <div class="metric-label">디스크 사용률</div>
+                        <div class="metric-value" id="disk-usage">-</div>
+                        <div class="progress">
+                            <div id="disk-progress" class="progress-bar" role="progressbar" style="width: 0%">0%</div>
+                        </div>
+                        <small id="disk-info" class="text-muted">-</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network -->
+            <div class="col-md-3">
+                <div class="card metric-card">
+                    <div class="card-body text-center">
+                        <span class="icon icon-network icon-metric"></span>
+                        <div class="metric-label">네트워크 (초당)</div>
+                        <div class="metric-value" id="network-usage">-</div>
+                        <div style="margin-top: 10px;">
+                            <small class="text-muted"><span class="icon icon-up"></span> <span id="network-sent">-</span> 송신</small><br>
+                            <small class="text-muted"><span class="icon icon-down"></span> <span id="network-recv">-</span> 수신</small>
+                        </div>
+                        <small id="goroutines" class="text-muted">GoRoutines: -</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 차트 영역 -->
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="icon icon-chart"></span> CPU 사용률 (1시간)
+                    </div>
+                    <div class="card-body">
+                        <canvas id="cpuChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="icon icon-chart"></span> 메모리 사용률 (1시간)
+                    </div>
+                    <div class="card-body">
+                        <canvas id="memoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="icon icon-chart"></span> 네트워크 속도 (1시간)
+                    </div>
+                    <div class="card-body">
+                        <canvas id="networkChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 스트림 상태 -->
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="icon icon-video"></span> 스트림 상태
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover stream-table" id="streams-table">
+                                <thead>
+                                    <tr>
+                                        <th>스트림 이름</th>
+                                        <th>채널</th>
+                                        <th>상태</th>
+                                        <th>클라이언트</th>
+                                        <th>녹화</th>
+                                        <th>업타임</th>
+                                        <th>URL</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="streams-tbody">
+                                    <tr>
+                                        <td colspan="7" class="text-center">데이터 로딩 중...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 자동 새로고침 정보 -->
+    <div class="refresh-info">
+        <span class="icon icon-sync" style="animation: spin 2s linear infinite;"></span> 5초마다 자동 업데이트<br>
+        <small id="last-update">마지막 업데이트: -</small>
+    </div>
+    
+    <style>
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+
+    <script src="/static/plugins/jquery/jquery.min.js"></script>
+    <script src="/static/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/adminlte.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script>
+        let cpuChart, memoryChart, networkChart;
+
+        // 차트 초기화
+        function initCharts() {
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#e4e6eb'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#e4e6eb'
+                        }
+                    }
+                }
+            };
+
+            // CPU 차트
+            const cpuCtx = document.getElementById('cpuChart').getContext('2d');
+            cpuChart = new Chart(cpuCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'CPU %',
+                        data: [],
+                        borderColor: '#4fc3f7',
+                        backgroundColor: 'rgba(79, 195, 247, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // 메모리 차트
+            const memoryCtx = document.getElementById('memoryChart').getContext('2d');
+            memoryChart = new Chart(memoryCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Memory %',
+                        data: [],
+                        borderColor: '#9c27b0',
+                        backgroundColor: 'rgba(156, 39, 176, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // 네트워크 차트
+            const networkCtx = document.getElementById('networkChart').getContext('2d');
+            networkChart = new Chart(networkCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Network MB/s',
+                        data: [],
+                        borderColor: '#4caf50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        ...chartOptions.scales,
+                        y: {
+                            ...chartOptions.scales.y,
+                            max: undefined,
+                            ticks: {
+                                ...chartOptions.scales.y.ticks,
+                                callback: function(value) {
+                                    return value.toFixed(2) + ' MB/s';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 데이터 업데이트
+        async function updateMonitoringData() {
+            try {
+                const response = await fetch('/api/monitoring/data?history=true');
+                const data = await response.json();
+
+                // 시스템 메트릭 업데이트
+                updateSystemMetrics(data.system);
+                
+                // 요약 정보 업데이트
+                updateSummary(data.summary);
+                
+                // 스트림 정보 업데이트
+                updateStreams(data.streams);
+                
+                // 경고 업데이트
+                updateAlerts(data.alerts);
+                
+                // 히스토리 차트 업데이트
+                if (data.history) {
+                    updateCharts(data.history);
+                }
+
+                // 마지막 업데이트 시간
+                const lastUpdate = new Date(data.last_update);
+                document.getElementById('last-update').textContent = 
+                    `마지막 업데이트: ${lastUpdate.toLocaleTimeString('ko-KR')}`;
+
+            } catch (error) {
+                console.error('Error fetching monitoring data:', error);
+            }
+        }
+
+        // 시스템 메트릭 업데이트
+        function updateSystemMetrics(system) {
+            // CPU
+            const cpuPercent = system.cpu_usage_percent.toFixed(1);
+            document.getElementById('cpu-usage').textContent = cpuPercent + '%';
+            document.getElementById('cpu-progress').style.width = cpuPercent + '%';
+            document.getElementById('cpu-progress').textContent = cpuPercent + '%';
+            document.getElementById('cpu-progress').className = 
+                'progress-bar ' + getProgressColor(cpuPercent);
+            document.getElementById('cpu-cores').textContent = 
+                `${system.cpu_cores} 코어`;
+
+            // Memory
+            const memPercent = system.memory_usage_percent.toFixed(1);
+            document.getElementById('memory-usage').textContent = memPercent + '%';
+            document.getElementById('memory-progress').style.width = memPercent + '%';
+            document.getElementById('memory-progress').textContent = memPercent + '%';
+            document.getElementById('memory-progress').className = 
+                'progress-bar ' + getProgressColor(memPercent);
+            document.getElementById('memory-info').textContent = 
+                `${(system.memory_used_mb / 1024).toFixed(1)} GB / ${(system.memory_total_mb / 1024).toFixed(1)} GB`;
+
+            // Disk
+            const diskPercent = system.disk_used_percent.toFixed(1);
+            document.getElementById('disk-usage').textContent = diskPercent + '%';
+            document.getElementById('disk-progress').style.width = diskPercent + '%';
+            document.getElementById('disk-progress').textContent = diskPercent + '%';
+            document.getElementById('disk-progress').className = 
+                'progress-bar ' + getProgressColor(diskPercent);
+            document.getElementById('disk-info').textContent = 
+                `${(system.disk_free_mb / 1024).toFixed(1)} GB 남음 / ${(system.disk_total_mb / 1024).toFixed(1)} GB`;
+
+            // Network (초당 전송량)
+            const totalNetwork = system.network_sent_mbps + system.network_recv_mbps;
+            document.getElementById('network-usage').textContent = 
+                `${totalNetwork.toFixed(2)} MB/s`;
+            document.getElementById('network-sent').textContent = 
+                `${system.network_sent_mbps.toFixed(2)} MB/s`;
+            document.getElementById('network-recv').textContent = 
+                `${system.network_recv_mbps.toFixed(2)} MB/s`;
+            document.getElementById('goroutines').textContent = 
+                `GoRoutines: ${system.goroutines}`;
+
+            // Uptime
+            document.getElementById('uptime').textContent = `업타임: ${system.uptime}`;
+        }
+
+        // 요약 정보 업데이트
+        function updateSummary(summary) {
+            document.getElementById('total-streams').textContent = summary.total_streams;
+            document.getElementById('online-streams').textContent = summary.online_streams;
+            document.getElementById('total-clients').textContent = summary.total_clients;
+            document.getElementById('recording-channels').textContent = summary.recording_channels;
+        }
+
+        // 스트림 정보 업데이트
+        function updateStreams(streams) {
+            const tbody = document.getElementById('streams-tbody');
+            tbody.innerHTML = '';
+
+            if (streams.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">스트림이 없습니다</td></tr>';
+                return;
+            }
+
+            streams.forEach(stream => {
+                Object.entries(stream.channels).forEach(([channelId, channel]) => {
+                    const row = document.createElement('tr');
+                    
+                    const statusBadge = channel.status === 'online' 
+                        ? '<span class="badge badge-online">온라인</span>'
+                        : '<span class="badge badge-offline">오프라인</span>';
+                    
+                    const recordingBadge = channel.is_recording
+                        ? '<span class="badge badge-recording"><span class="icon icon-circle"></span> 녹화중</span>'
+                        : '-';
+
+                    row.innerHTML = `
+                        <td>${stream.stream_name}</td>
+                        <td>채널 ${channelId}</td>
+                        <td>${statusBadge}</td>
+                        <td>${channel.client_count}</td>
+                        <td>${recordingBadge}</td>
+                        <td>${channel.uptime || '-'}</td>
+                        <td><small class="text-muted">${channel.url.substring(0, 50)}...</small></td>
+                    `;
+                    
+                    tbody.appendChild(row);
+                });
+            });
+        }
+
+        // 경고 업데이트
+        function updateAlerts(alerts) {
+            const container = document.getElementById('alerts-container');
+            container.innerHTML = '';
+
+            if (!alerts || alerts.length === 0) return;
+
+            alerts.forEach(alert => {
+                const alertClass = `alert-${alert.level}`;
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert ${alertClass} alert-dismissible fade show`;
+                alertDiv.innerHTML = `
+                    <strong>${alert.level.toUpperCase()}:</strong> ${alert.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                container.appendChild(alertDiv);
+            });
+        }
+
+        // 차트 업데이트
+        function updateCharts(history) {
+            // CPU 차트
+            cpuChart.data.labels = history.cpu_history.map(p => 
+                new Date(p.timestamp).toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'})
+            );
+            cpuChart.data.datasets[0].data = history.cpu_history.map(p => p.value);
+            cpuChart.update('none');
+
+            // 메모리 차트
+            memoryChart.data.labels = history.memory_history.map(p => 
+                new Date(p.timestamp).toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'})
+            );
+            memoryChart.data.datasets[0].data = history.memory_history.map(p => p.value);
+            memoryChart.update('none');
+
+            // 네트워크 차트
+            networkChart.data.labels = history.network_history.map(p => 
+                new Date(p.timestamp).toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'})
+            );
+            networkChart.data.datasets[0].data = history.network_history.map(p => p.value);
+            networkChart.update('none');
+        }
+
+        // Progress bar 색상
+        function getProgressColor(percent) {
+            if (percent >= 90) return 'bg-danger';
+            if (percent >= 75) return 'bg-warning';
+            if (percent >= 50) return 'bg-info';
+            return 'bg-success';
+        }
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            updateMonitoringData();
+            
+            // 5초마다 자동 업데이트
+            setInterval(updateMonitoringData, 5000);
+        });
+    </script>
+</body>
+</html>
+
+

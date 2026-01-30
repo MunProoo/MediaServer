@@ -1,0 +1,71 @@
+{
+  "channel_defaults": {},
+  "server": {
+    "debug": false,
+    "ffmpeg_path": "./external_tools/",
+    "http_debug": false,
+    "http_demo": true,
+    "http_dir": "media_web",
+    "http_login": "mjy",
+    "http_password": "mjy",
+    "http_port": ":8083",
+    "https": true,
+    "https_auto_tls": false,
+    "https_auto_tls_name": "",
+    "https_cert": "./sslgen/AlpetaCertificate.pem",
+    "https_key": "./sslgen/AlpetaPrivateKey.pem",
+    "https_port": "",
+    "ice_credential": "mjy",
+    "ice_servers": [
+      "turn:14.14.14.2:8888",
+      "turn:14.14.14.2:8888?transport=tcp"
+    ],
+    "ice_username": "mjy",
+    "log_level": "panic",
+    "maintenance": {
+      "base_root": ".",
+      "default_safety_free_space": 5,
+      "disk_check_interval": 1,
+      "retention_capacity": 502,
+      "retention_days": 30
+    },
+    "rtsp_port": ":5541",
+    "token": {
+      "backend": "",
+      "enable": false
+    },
+    "webrtc_port_max": 65500,
+    "webrtc_port_min": 49152
+  },
+  "streams": {
+    "131f5441-2fdd-4c07-6c86-edfc37e3c639": {
+      "channels": {
+        "0": {
+          "name": "ch1",
+          "on_demand": true,
+          "url": "rtsp://admin:password@14.14.14.107:5544/h264.sdp"
+        }
+      },
+      "name": "최신 프리미엄"
+    },
+    "980e2786-49f7-417e-4e09-e1ba001149a7": {
+      "channels": {
+        "0": {
+          "name": "ch1",
+          "on_demand": true,
+          "url": "rtsp://admin:password@14.14.14.118:5544/h264.sdp"
+        }
+      },
+      "name": "최신프로"
+    },
+    "b23b48c2-ace5-45e2-9c1e-e703aa195469": {
+      "channels": {
+        "0": {
+          "on_demand": true,
+          "url": "rtsp://admin:1q2w3e4r!@14.14.14.5"
+        }
+      },
+      "name": "123"
+    }
+  }
+}

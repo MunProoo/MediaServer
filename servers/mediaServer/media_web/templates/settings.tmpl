@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="{{ .lang }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>{{ .texts.Title }}</title>
+  <link rel="stylesheet" href="/../static/plugins/fontawesome-free/css/all.min.css">
+  <link rel="stylesheet" href="/../static/css/adminlte.min.css">
+  <link rel="stylesheet" href="/../static/plugins/sweetalert2/sweetalert2.min.css">
+  <link rel="stylesheet" href="/../static/css/index.css">
+  <link href="/../static/css/google-fonts.css" rel="stylesheet">
+</head>
+<body class="hold-transition layout-top-nav">
+  <div class="wrapper">
+  <!-- 필요없는 MediaServer 및 메뉴 버튼
+    <nav class="main-header navbar navbar-expand-md navbar-light navbar-white border-bottom-0 shadow-sm">
+      <div class="container">
+        <a href="/" class="navbar-brand">
+          <span class="brand-text font-weight-bold">{{ .texts.NavbarBrand }}</span>
+        </a>
+        <button class="navbar-toggler order-1" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse order-3" id="navbarCollapse">
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+              <a href="/" class="nav-link"><i class="fas fa-home mr-1"></i>{{ .texts.NavbarDashboard }}</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    -->
+
+    <div class="content-wrapper">
+      <!-- 필요없는 페이지 헤더 및 홈 버튼
+      <div class="content-header">
+        <div class="container">
+          <div class="row mb-2">
+            <div class="col-sm-6">
+              <h1 class="m-0 text-dark">{{ .texts.PageHeader }}</h1>
+            </div>
+            <div class="col-sm-6">
+              <ol class="breadcrumb float-sm-right">
+                <li class="breadcrumb-item"><a href="/">{{ .texts.BreadcrumbHome }}</a></li>
+                <li class="breadcrumb-item active">{{ .texts.BreadcrumbSettings }}</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+      -->
+
+      <section class="content">
+        <div class="container">
+          <div class="row justify-content-center">
+            <div class="col-xl-6 col-lg-7 col-md-9">
+              {{ if .error }}
+              <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-triangle mr-2"></i>{{ .error }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              {{ end }}
+
+              {{ if .success }}
+              <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle mr-2"></i>{{ if .successMessage }}{{ .successMessage }}{{ else }}{{ .texts.SuccessSaved }}{{ end }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              {{ end }}
+
+              <div class="card card-primary" style="margin-top:30px;">
+                <div class="card-header">
+                  <h3 class="card-title">{{ .texts.CardRetention }}</h3>
+                </div>
+                <form method="post" action="/pages/settings?lang={{ .lang }}">
+                  <div class="card-body">
+                    <div class="form-group">
+                      <label for="retentionDays">{{ .texts.LabelRetentionDays }}</label>
+                      <input type="number" min="0" class="form-control" id="retentionDays" name="retentionDays" value="{{ .retentionDays }}">
+                      <small class="form-text text-muted">{{ .texts.HelpRetentionDays }}</small>
+                    </div>
+                    <div class="form-group">
+                      <label for="retentionCapacity">{{ .texts.LabelRetentionCapacity }}</label>
+                      <input type="number" min="0" step="0.1" class="form-control" id="retentionCapacity" name="retentionCapacity" value="{{ .retentionCapacity }}">
+                      <small class="form-text text-muted">{{ .texts.HelpRetentionCapacity }}</small>
+                    </div>
+                    <div class="form-group">
+                      <label for="baseRoot">{{ .texts.LabelBaseRoot }}</label>
+                      <div class="input-group">
+                        <input type="text" class="form-control" id="baseRoot" name="baseRoot" value="{{ .baseRoot }}">
+                        <div class="input-group-append">
+                          <button type="button" class="btn btn-outline-secondary" id="browseBaseRoot"><i class="fas fa-folder-open mr-1"></i>{{ .texts.ButtonBrowse }}</button>
+                        </div>
+                      </div>
+                      <small class="form-text text-muted">{{ .texts.HelpBaseRoot }}</small>
+                    </div>
+                    <div class="form-group">
+                      <label for="defaultSafetyFreeSpace">{{ .texts.LabelSafetyFreeSpace }}</label>
+                      <input type="number" min="0" step="0.1" class="form-control" id="defaultSafetyFreeSpace" name="defaultSafetyFreeSpace" value="{{ .defaultSafetyFreeSpace }}">
+                      <small class="form-text text-muted">{{ .texts.HelpSafetyFreeSpace }}</small>
+                    </div>
+                  </div>
+                  <div class="card-footer text-right">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i>{{ .texts.ButtonSave }}</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="modal fade" id="directoryPickerModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-folder-open mr-2"></i>{{ .texts.ModalTitle }}</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="input-group mb-3">
+            <input type="text" class="form-control" id="directoryPathInput" placeholder="{{ .texts.ModalPlaceholder }}">
+            <div class="input-group-append">
+              <button class="btn btn-outline-secondary" type="button" id="directoryGoBtn">{{ .texts.ModalGo }}</button>
+            </div>
+          </div>
+          <div id="directoryStatus" class="text-muted mb-2 small"></div>
+          <div class="list-group" id="directoryList" style="max-height: 360px; overflow-y: auto;"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ .texts.ModalCancel }}</button>
+          <button type="button" class="btn btn-primary" id="selectDirectoryBtn"><i class="fas fa-check mr-1"></i>{{ .texts.ModalSelect }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/../static/plugins/jquery/jquery.min.js"></script>
+  <script src="/../static/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="/../static/js/adminlte.min.js"></script>
+  <script>
+    (function () {
+      const browseBtn = document.getElementById('browseBaseRoot');
+      if (!browseBtn) {
+        return;
+      }
+
+      const modalElement = document.getElementById('directoryPickerModal');
+      const directoryList = document.getElementById('directoryList');
+      const directoryStatus = document.getElementById('directoryStatus');
+      const directoryPathInput = document.getElementById('directoryPathInput');
+      const selectDirectoryBtn = document.getElementById('selectDirectoryBtn');
+      const baseRootInput = document.getElementById('baseRoot');
+      const directoryGoBtn = document.getElementById('directoryGoBtn');
+
+      function showModal() {
+        window.jQuery(modalElement).modal('show');
+      }
+
+      function hideModal() {
+        window.jQuery(modalElement).modal('hide');
+      }
+
+      async function loadDirectories(path) {
+        directoryStatus.textContent = {{ printf "%q" .texts.Loading }};
+        directoryList.innerHTML = '';
+
+        try {
+          const response = await fetch(`/api/maintenance/directories?path=${encodeURIComponent(path)}`);
+          if (!response.ok) {
+            throw new Error(await response.text());
+          }
+
+          const data = await response.json();
+          directoryPathInput.value = data.currentPath;
+
+          const fragments = document.createDocumentFragment();
+
+          if (data.parentPath && data.parentPath !== data.currentPath) {
+            const upItem = document.createElement('button');
+            upItem.type = 'button';
+            upItem.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+            upItem.innerHTML = `<span><i class="fas fa-level-up-alt mr-2"></i>{{ .texts.UpOneLevel }}</span>`;
+            upItem.addEventListener('click', () => loadDirectories(data.parentPath));
+            fragments.appendChild(upItem);
+          }
+
+          if (data.directories && data.directories.length) {
+            data.directories.forEach((dir) => {
+              const item = document.createElement('button');
+              item.type = 'button';
+              item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+              item.innerHTML = `<span><i class="fas fa-folder mr-2 text-warning"></i>${dir.name}</span>`;
+              item.addEventListener('click', () => loadDirectories(dir.path));
+              fragments.appendChild(item);
+            });
+          } else {
+            const emptyItem = document.createElement('div');
+            emptyItem.className = 'list-group-item text-muted';
+            emptyItem.textContent = {{ printf "%q" .texts.NoSubfolders }};
+            fragments.appendChild(emptyItem);
+          }
+
+          directoryList.innerHTML = '';
+          directoryList.appendChild(fragments);
+          directoryStatus.textContent = data.message || '';
+        } catch (err) {
+          directoryStatus.textContent = {{ printf "%q" .texts.ErrorPrefix }} + err.message;
+        }
+      }
+
+      browseBtn.addEventListener('click', () => {
+        showModal();
+        loadDirectories(baseRootInput.value || '.');
+      });
+
+      directoryGoBtn.addEventListener('click', () => {
+        loadDirectories(directoryPathInput.value.trim() || '.');
+      });
+
+      directoryPathInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          loadDirectories(directoryPathInput.value.trim() || '.');
+        }
+      });
+
+      selectDirectoryBtn.addEventListener('click', () => {
+        baseRootInput.value = directoryPathInput.value.trim();
+        hideModal();
+      });
+    })();
+  </script>
+</body>
+</html>
