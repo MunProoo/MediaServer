@@ -1,0 +1,7 @@
+{
+  "PublicIP": "14.14.14.2",
+  "Port": 8888,
+  "Users": "mjy=mjy",
+  "Realm": "pion.ly",
+  "MonitorIntervalMin": 10
+}
