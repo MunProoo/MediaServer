@@ -38,6 +38,16 @@
     "webrtc_port_min": 49152
   },
   "streams": {
+    "ade82dec-4c7e-4390-5309-21fcffa79a63": {
+      "channels": {
+        "0": {
+          "name": "ch1",
+          "on_demand": true,
+          "url": "rtsp://210.99.70.120:1935/live/cctv001.stream"
+        }
+      },
+      "name": "공공데이터"
+    },
     "d2129943-c34d-4bb5-5ed8-0d131e5a7f72": {
       "channels": {
         "0": {

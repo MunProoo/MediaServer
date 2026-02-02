@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.title}}</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/recording.css">
 </head>
 <body>
     <div class="container">
@@ -12,16 +13,17 @@
             <h1>Media Server Client</h1>
             <nav>
                 <ul>
-                    <li><a href="/">Home</a></li>
+                    <li><a href="#" class="tab-link" data-tab="dashboard">Home</a></li>
                     <li><a href="#" id="coreLiveViewLink">LiveView</a></li>
-                    <li><a href="#" id="streamsLink">Streams</a></li>
-                    <li><a href="#settings">Settings</a></li>
+                    <li><a href="#" class="tab-link" data-tab="streams">Streams</a></li>
+                    <li><a href="#" class="tab-link" data-tab="recording">Recording</a></li>
+                    <li><a href="#" class="tab-link" data-tab="settings">Settings</a></li>
                 </ul>
             </nav>
         </header>
 
         <main>
-            <section id="dashboard">
+            <section id="dashboard" class="tab-content active">
                 <h2>Dashboard</h2>
                 <div class="dashboard-grid">
                     <div class="card">
@@ -39,7 +41,7 @@
                 </div>
             </section>
 
-            <section id="streams">
+            <section id="streams" class="tab-content">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h2>Streams</h2>
                     <button class="btn btn-primary" onclick="showAddStreamModal()">+ Add Stream</button>
@@ -49,7 +51,94 @@
                 </div>
             </section>
 
-            <section id="settings">
+            <section id="recording" class="tab-content">
+                <!-- 녹화 영상 탭 컨텐츠 -->
+                <div class="recording-container">
+                    <!-- 왼쪽: 단말기 리스트 -->
+                    <div class="device-list-panel">
+                        <div class="panel-header">
+                            <h2>Stream List</h2>
+                        </div>
+                        <div class="panel-content">
+                            <div class="list-header">
+                                <span>이름</span>
+                            </div>
+                            <div id="recordingStreamList" class="stream-list-items">
+                                <!-- Stream 목록이 여기에 동적으로 추가됩니다 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 오른쪽: 메인 콘텐츠 -->
+                    <div class="main-content-panel">
+                        <!-- 상단: 녹화 파일 선택 -->
+                        <div class="recording-file-section">
+                            <div class="file-header">
+                                <span class="file-label">녹화 파일</span>
+                                <div class="file-controls">
+                                    <input type="date" id="dateInput" class="date-input" />
+                                    <button id="refreshBtn" class="refresh-btn" title="새로고침">
+                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M8 0C3.58 0 0 3.58 0 8s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z" fill="currentColor"/>
+                                            <path d="M8 4v4l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 중간: 비디오 플레이어 -->
+                        <div class="video-player-section">
+                            <video id="videoPlayer" class="video-player" controls>
+                                <source src="" type="application/x-mpegURL">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+
+                        <!-- 하단: 타임라인 -->
+                        <div class="timeline-section">
+                            <!-- 타임라인 컨테이너 -->
+                            <div id="timelineContainer" class="timeline-container">
+                              
+                              <!-- 상단 정보 -->
+                              <div class="timeline-info">
+                                <span id="currentTimeInfo" class="current-time"></span>
+                                 <span id="visibleRange">
+                                 	<span class="font-semibold" id="visibleRangeTitle"></span>
+                                 	<span class="font-light" id="visibleRangeTime"></span>
+                                 </span>
+                              </div>
+                              
+                              <!-- 시간 눈금 배경 -->
+                              <div class="spacer"></div>
+                              <div class="ruler" id="ruler"></div>	
+                              <!-- 타임라인 뷰포트 (overflow hidden) -->
+                              <div id="timelineViewport" class="timeline-viewport">
+                                <!-- 타임라인 캔버스 (드래그 가능, 실제 타임라인) -->
+                                <div id="timelineCanvas" class="timeline-canvas">
+                                  <!-- 녹화 구간들 -->
+                                  <div id="segmentsContainer" class="segments-container"></div>
+                                  
+                                  <!-- 타임라인 위 플레이헤드 (넓은 뷰 12/24시간) -->
+                                  <div id="playheadOnTimeline" class="playhead-on-timeline" style="display:none;">
+                                  </div>
+                                </div>
+                                
+                                <!-- 중앙 고정 플레이헤드 (좁은 뷰 8시간 이하) -->
+                                <div id="playheadFixed" class="playhead-fixed">
+                                </div>
+                              </div>
+                              
+                               <!-- 상태 메시지 -->
+                              <div id="status" class="status">녹화 파일을 로딩 중..</div>
+                              
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="settings" class="tab-content">
                 <h2>Settings</h2>
                 <div class="settings-form">
                     <form id="settingsForm">
@@ -99,7 +188,10 @@
         </div>
     </div>
 
+    <!-- HLS.js 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="/static/js/main.js"></script>
+    <script src="/static/js/recording.js"></script>
 </body>
 </html>
 

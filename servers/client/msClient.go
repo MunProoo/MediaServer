@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
 	"sync"
 	"time"
 )
@@ -21,6 +22,8 @@ type MediaServerClient struct {
 
 var mediaServerClient *MediaServerClient
 var clientOnce sync.Once
+var core2UrlMap map[string]string // hls 녹화 경로 토큰화
+var core2UrlMapMutex sync.Mutex
 
 type WRRequestBody struct {
 	Name     string             `json:"name"`
@@ -60,12 +63,14 @@ func getMediaServerClient() *MediaServerClient {
 			baseURL:    baseURL,
 			httpClient: globalClientPool.Get().(*http.Client),
 		}
+		core2UrlMap = make(map[string]string)
 	})
 	return mediaServerClient
 }
 
 // request 공통 HTTP 요청 함수
-func (client *MediaServerClient) request(method, path string, body interface{}) (*http.Response, error) {
+// queryParams가 nil이 아니면 쿼리 파라미터를 URL에 추가합니다
+func (client *MediaServerClient) request(method, path string, body interface{}, queryParams ...url.Values) (*http.Response, error) {
 	var reqBody io.Reader
 	if body != nil {
 		jsonData, err := json.Marshal(body)
@@ -75,8 +80,19 @@ func (client *MediaServerClient) request(method, path string, body interface{}) 
 		reqBody = bytes.NewBuffer(jsonData)
 	}
 
-	url := client.baseURL + path
-	req, err := http.NewRequest(method, url, reqBody)
+	requestURL := client.baseURL + path
+
+	// 쿼리 파라미터가 있으면 추가
+	if len(queryParams) > 0 && queryParams[0] != nil {
+		parsedURL, err := url.Parse(requestURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse URL: %w", err)
+		}
+		parsedURL.RawQuery = queryParams[0].Encode()
+		requestURL = parsedURL.String()
+	}
+
+	req, err := http.NewRequest(method, requestURL, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}

@@ -269,8 +269,8 @@ func handleWebSocketHealth(c *gin.Context) {
 
 	log.Println("WebSocket client connected for health check")
 
-	// 주기적으로 health 상태 전송 (1초마다)
-	ticker := time.NewTicker(1 * time.Second)
+	// 주기적으로 health 상태 전송 (5초마다)
+	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
 	// Ping/Pong 핸들러
@@ -308,6 +308,7 @@ func handleWebSocketHealth(c *gin.Context) {
 				Message:   "Client server is running",
 				Timestamp: time.Now(),
 				Uptime:    uptime,
+				Streams:   appConfig.StreamList, // 스트림 목록 포함
 			}
 
 			data, err := json.Marshal(status)

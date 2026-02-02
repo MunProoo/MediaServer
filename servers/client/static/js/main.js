@@ -14,10 +14,85 @@ function initializeApp() {
     connectWebSocket();
     loadSettings();
     setupCoreLiveViewLink();
+    setupTabs();
     loadStreams();
     setupStreamForm();
     // 주기적으로 상태 업데이트 (5초마다)
     setInterval(updateDashboard, 5000);
+}
+
+// 탭 설정
+function setupTabs() {
+    // 탭 링크 클릭 이벤트
+    document.querySelectorAll('.tab-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const tabName = this.getAttribute('data-tab');
+            switchTab(tabName);
+        });
+    });
+    
+    // URL 파라미터 확인 (recording 접근 시)
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab');
+    if (tab) {
+        switchTab(tab);
+    } else if (window.location.pathname === '/v1/recording') {
+        switchTab('recording');
+    }
+}
+
+// 탭 전환
+function switchTab(tabName) {
+    // 현재 활성화된 탭 확인
+    const currentActiveTab = document.querySelector('.tab-content.active');
+    const currentTabName = currentActiveTab ? currentActiveTab.id : null;
+    
+    // Recording 탭을 떠날 때 정리
+    if (currentTabName === 'recording' && tabName !== 'recording') {
+        if (typeof cleanupRecording !== 'undefined') {
+            cleanupRecording();
+        }
+    }
+    
+    // 모든 탭 컨텐츠 숨기기
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // 모든 탭 링크 비활성화
+    document.querySelectorAll('.tab-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    
+    // 선택된 탭 컨텐츠 표시
+    const targetTab = document.getElementById(tabName);
+    if (targetTab) {
+        targetTab.classList.add('active');
+    }
+    
+    // 선택된 탭 링크 활성화
+    const targetLink = document.querySelector(`.tab-link[data-tab="${tabName}"]`);
+    if (targetLink) {
+        targetLink.classList.add('active');
+    }
+    
+    // URL 업데이트 (히스토리 추가)
+    const newUrl = tabName === 'dashboard' ? '/' : `/?tab=${tabName}`;
+    window.history.pushState({ tab: tabName }, '', newUrl);
+    
+    // Recording 탭인 경우 초기화
+    if (tabName === 'recording') {
+        initializeRecordingTab();
+    }
+}
+
+// Recording 탭 초기화
+function initializeRecordingTab() {
+    // recording.js의 초기화 함수가 있으면 호출
+    if (typeof initializeRecording !== 'undefined') {
+        initializeRecording();
+    }
 }
 
 // Streams 링크 클릭 이벤트 설정
@@ -44,12 +119,18 @@ function connectWebSocket() {
             console.log('WebSocket connected');
             reconnectAttempts = 0;
             updateConnectionStatus('connected');
+            // WebSocket 연결 후 초기 스트림 목록 요청 (서버가 자동으로 보내지만, 즉시 받기 위해)
+            // 서버가 주기적으로 보내므로 별도 요청 불필요
         };
         
         healthWebSocket.onmessage = function(event) {
             try {
                 const data = JSON.parse(event.data);
                 updateHealthStatus(data);
+                // 스트림 목록이 있으면 업데이트
+                if (data.streams && Array.isArray(data.streams)) {
+                    updateStreamListFromWebSocket(data.streams);
+                }
             } catch (error) {
                 console.error('Failed to parse WebSocket message:', error);
             }
@@ -124,11 +205,37 @@ function updateConnectionStatus(status) {
 
 // 대시보드 업데이트
 async function updateDashboard() {
-    await loadStreams();
+    // WebSocket이 연결되어 있으면 자동으로 업데이트되므로 불필요
+    // WebSocket이 연결되지 않았을 때만 HTTP API 사용
+    if (!healthWebSocket || healthWebSocket.readyState !== WebSocket.OPEN) {
+        await loadStreams();
+    }
 }
 
-// 스트림 목록 로드
+// WebSocket으로부터 스트림 목록 업데이트
+function updateStreamListFromWebSocket(streamsData) {
+    if (streamsData && Array.isArray(streamsData)) {
+        updateStreamList(streamsData);
+        document.getElementById('activeStreams').textContent = streamsData.length;
+        
+        // Recording 탭의 스트림 목록도 업데이트
+        if (typeof updateRecordingStreamList === 'function') {
+            updateRecordingStreamList(streamsData);
+        }
+    }
+}
+
+// 스트림 목록 로드 (초기 로드용, 이후는 WebSocket으로 업데이트)
 async function loadStreams() {
+    // WebSocket이 연결되어 있으면 WebSocket으로부터 받아오고,
+    // 연결되지 않았을 때만 HTTP API 사용
+    if (healthWebSocket && healthWebSocket.readyState === WebSocket.OPEN) {
+        // WebSocket이 연결되어 있으면 WebSocket 메시지를 기다림
+        // (서버가 주기적으로 보내므로 별도 요청 불필요)
+        return;
+    }
+    
+    // WebSocket이 연결되지 않았을 때만 HTTP API 사용
     try {
         const response = await fetch('/api/streams');
         const data = await response.json();

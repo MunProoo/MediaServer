@@ -23,7 +23,8 @@ type HealthStatus struct {
 	Status    string    `json:"status"`
 	Message   string    `json:"message"`
 	Timestamp time.Time `json:"timestamp"`
-	Uptime    int64     `json:"uptime"` // 초 단위
+	Uptime    int64     `json:"uptime"`            // 초 단위
+	Streams   []Stream  `json:"streams,omitempty"` // 스트림 목록
 }
 
 // Config 전체 설정 구조체
@@ -95,6 +96,11 @@ func main() {
 
 	// API 엔드포인트
 	r.GET("/v1/coreLiveView", HTTPAPICoreLiveView)
+
+	// 녹화 영상 페이지 - index.html로 리다이렉트 (탭으로 표시)
+	r.GET("/v1/recording", func(c *gin.Context) {
+		c.Redirect(http.StatusFound, "/?tab=recording")
+	})
 
 	// Stream 관리 API
 	api := r.Group("/api")

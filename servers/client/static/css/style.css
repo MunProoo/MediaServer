@@ -267,6 +267,36 @@ footer {
     background: #f57c00;
 }
 
+/* Tab Styles */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+nav a.tab-link.active {
+    background-color: rgba(255,255,255,0.3);
+    font-weight: bold;
+}
+
+/* Recording tab specific styles */
+#recording {
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    box-shadow: none;
+    height: calc(100vh - 200px);
+    min-height: 600px;
+    overflow: hidden;
+}
+
+#recording .recording-container {
+    height: 100%;
+    width: 100%;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .dashboard-grid {

@@ -16,6 +16,13 @@
       "rtspURL": "rtsp://admin:password@14.14.14.7:5544/h264.sdp",
       "streamID": "d2129943-c34d-4bb5-5ed8-0d131e5a7f72",
       "recording": false
+    },
+    {
+      "name": "공공데이터",
+      "ip": "ㄴ",
+      "rtspURL": "rtsp://210.99.70.120:1935/live/cctv001.stream",
+      "streamID": "ade82dec-4c7e-4390-5309-21fcffa79a63",
+      "recording": false
     }
   ]
 }

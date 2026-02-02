@@ -37,7 +37,7 @@ func handleGet(c *gin.Context) {
 	if len(reqSlice) == 4 && reqSlice[2] == "core" {
 		switch reqSlice[3] {
 		case "m3u8Info":
-			getM3U8Info(c)
+			// getM3U8Info(c)
 		case "ts":
 			serveTS(c)
 		case "key":
@@ -108,4 +108,197 @@ func handleSignalling(c *gin.Context) {
 
 	// key file 전달
 	io.Copy(c.Writer, resp.Body)
+}
+
+func getM3U8List(c *gin.Context) {
+	msclient := getMediaServerClient()
+	reqQuery := c.Request.URL.Query()
+
+	streamID := reqQuery.Get("streamID")
+	date := reqQuery.Get("date")
+
+	// 쿼리 파라미터 구성
+	queryParams := url.Values{}
+	if date != "" {
+		queryParams.Set("date", date)
+	}
+	if streamID != "" {
+		queryParams.Set("streamID", streamID)
+	}
+
+	// request 메서드에 쿼리 파라미터 전달
+	resp, err := msclient.request("GET", "/stream/recording/list", nil, queryParams)
+	if err != nil {
+		log.Printf("Request failed: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "failed to api request",
+		})
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		dump2, _ := httputil.DumpResponse(resp, true)
+		log.Printf("Response error (status %d): %s", resp.StatusCode, string(dump2))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "media server returned error",
+		})
+		return
+	}
+
+	// 응답을 그대로 클라이언트에 전달
+	c.Header("Content-Type", resp.Header.Get("Content-Type"))
+	c.Status(resp.StatusCode)
+	io.Copy(c.Writer, resp.Body)
+}
+
+// serveM3U8 M3U8 파일 서빙 (TODO: 구현 필요)
+func serveM3U8(c *gin.Context) {
+	msclient := getMediaServerClient()
+	reqQuery := c.Request.URL.Query()
+
+	streamID := reqQuery.Get("StreamID")
+	channelID := reqQuery.Get("ChannelID")
+	fileName := reqQuery.Get("Filename")
+
+	// 쿼리 파라미터 구성
+	queryParams := url.Values{}
+	if streamID != "" {
+		queryParams.Set("streamID", streamID)
+	}
+	if channelID != "" {
+		queryParams.Set("channel", channelID)
+	}
+	if fileName != "" {
+		queryParams.Set("m3u8File", fileName)
+	}
+
+	// request 메서드에 쿼리 파라미터 전달
+	resp, err := msclient.request("GET", "/stream/recording/m3u8", nil, queryParams)
+	if err != nil {
+		log.Printf("Request failed: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "failed to api request",
+		})
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		dump2, _ := httputil.DumpResponse(resp, true)
+		log.Printf("Response error (status %d): %s", resp.StatusCode, string(dump2))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "media server returned error",
+		})
+		return
+	}
+
+	// m3u8 읽기
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("failed to read m3u8 content: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "failed to read m3u8 content",
+		})
+		return
+	}
+
+	// m3u8 내용 수정 (TS 파일 경로를 프록시 경로로 수정)
+	newM3U8 := replaceM3U8(queryParams, string(body))
+	c.Header("Content-Type", "application/vnd.apple.mpegurl")
+	c.Header("Cache-Control", "no-cache")
+	c.Status(http.StatusOK)
+	c.Writer.Write([]byte(newM3U8))
+}
+
+// serveTS TS 파일 서빙 (TODO: 구현 필요)
+func serveTS(c *gin.Context) {
+	reqQuery := c.Request.URL.Query()
+	token := reqQuery.Get("token")
+	core2UrlMapMutex.Lock()
+	segURLStr, exist := core2UrlMap[token]
+	core2UrlMapMutex.Unlock()
+	if !exist {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  "error",
+			"message": "token not found",
+		})
+		return
+	}
+
+	msClient := getMediaServerClient()
+	resp, err := msClient.request("GET", segURLStr, nil)
+	if err != nil {
+		log.Printf("Request failed: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "failed to api request",
+		})
+		return
+	}
+
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		dump2, _ := httputil.DumpResponse(resp, true)
+		log.Printf("Response error (status %d): %s", resp.StatusCode, string(dump2))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "media server returned error",
+		})
+		return
+	}
+
+	c.Header("Content-Type", resp.Header.Get("Content-Type"))
+	c.Header("Cache-Control", resp.Header.Get("Cache-Control"))
+	c.Status(resp.StatusCode)
+	io.Copy(c.Writer, resp.Body) // TS 파일 스트리밍
+}
+
+// serveKey Key 파일 서빙 (TODO: 구현 필요)
+func serveKey(c *gin.Context) {
+	reqQuery := c.Request.URL.Query()
+	token := reqQuery.Get("token")
+	core2UrlMapMutex.Lock()
+	keyURI, exist := core2UrlMap[token]
+	core2UrlMapMutex.Unlock()
+
+	if !exist {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  "error",
+			"message": "token not found",
+		})
+		return
+	}
+
+	msClient := getMediaServerClient()
+	resp, err := msClient.request("GET", keyURI, nil)
+	if err != nil {
+		log.Printf("Request failed: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "failed to api request",
+		})
+		return
+	}
+
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		dump2, _ := httputil.DumpResponse(resp, true)
+		log.Printf("Response error (status %d): %s", resp.StatusCode, string(dump2))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "media server returned error",
+		})
+		return
+	}
+
+	c.Header("Content-Type", resp.Header.Get("Content-Type"))
+	c.Header("Cache-Control", resp.Header.Get("Cache-Control"))
+	c.Status(resp.StatusCode)
+	io.Copy(c.Writer, resp.Body) // Key 파일 전달
 }
