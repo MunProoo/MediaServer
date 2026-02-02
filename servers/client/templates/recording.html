@@ -5,87 +5,76 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>녹화 영상</title>
     <link rel="stylesheet" href="/static/css/recording.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
-<body>
-    <div class="recording-container">
-        <!-- 왼쪽: 단말기 리스트 -->
-        <div class="device-list-panel">
-            <div class="panel-header">
-                <h2>Stream List</h2>
+<body class="recording-page">
+    <div class="recording-wrapper">
+        <!-- Left Sidebar: Stream List -->
+        <aside class="recording-sidebar">
+            <div class="sidebar-header">
+                <h3>Stream List</h3>
             </div>
-            <div class="panel-content">
-                <div class="list-header">
-                    <span>이름</span>
+            <div class="sidebar-content">
+                <div class="sidebar-list-header">
+                    <span>Stream Name</span>
                 </div>
-                <div id="streamList" class="stream-list-items">
+                <div id="streamList" class="sidebar-list">
                     <!-- Stream 목록이 여기에 동적으로 추가됩니다 -->
                 </div>
             </div>
-        </div>
+        </aside>
 
-        <!-- 오른쪽: 메인 콘텐츠 -->
-        <div class="main-content-panel">
-            <!-- 상단: 녹화 파일 선택 -->
-            <div class="recording-file-section">
-                <div class="file-header">
-                    <span class="file-label">녹화 파일</span>
-                    <div class="file-controls">
+        <!-- Main Content Area -->
+        <div class="recording-main">
+            <!-- Control Bar -->
+            <div class="recording-controls">
+                <div class="control-group">
+                    <label class="control-label">Recording Date</label>
+                    <div class="control-inputs">
                         <input type="date" id="dateInput" class="date-input" />
-                        <button id="refreshBtn" class="refresh-btn" title="새로고침">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M8 0C3.58 0 0 3.58 0 8s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z" fill="currentColor"/>
-                                <path d="M8 4v4l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+                        <button id="refreshBtn" class="btn-icon-only" title="Refresh">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <polyline points="1 20 1 14 7 14"></polyline>
+                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
                             </svg>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- 중간: 비디오 플레이어 -->
-            <div class="video-player-section">
+            <!-- Video Player -->
+            <div class="recording-player">
                 <video id="videoPlayer" class="video-player" controls>
                     <source src="" type="application/x-mpegURL">
                     Your browser does not support the video tag.
                 </video>
             </div>
 
-            <!-- 하단: 타임라인 -->
-            <div class="timeline-section">
-                <!-- 타임라인 컨테이너 -->
+            <!-- Timeline -->
+            <div class="recording-timeline">
                 <div id="timelineContainer" class="timeline-container">
-                  
-                  <!-- 상단 정보 -->
-                  <div class="timeline-info">
-                    <span id="currentTimeInfo" class="current-time"></span>
-                     <span id="visibleRange">
-                     	<span class="font-semibold" id="visibleRangeTitle"></span>
-                     	<span class="font-light" id="visibleRangeTime"></span>
-                     </span>
-                  </div>
-                  
-                  <!-- 시간 눈금 배경 -->
-                  <div class="spacer"></div>
-                  <div class="ruler" id="ruler"></div>	
-                  <!-- 타임라인 뷰포트 (overflow hidden) -->
-                  <div id="timelineViewport" class="timeline-viewport">
-                    <!-- 타임라인 캔버스 (드래그 가능, 실제 타임라인) -->
-                    <div id="timelineCanvas" class="timeline-canvas">
-                      <!-- 녹화 구간들 -->
-                      <div id="segmentsContainer" class="segments-container"></div>
-                      
-                      <!-- 타임라인 위 플레이헤드 (넓은 뷰 12/24시간) -->
-                      <div id="playheadOnTimeline" class="playhead-on-timeline" style="display:none;">
-                      </div>
+                    <div class="timeline-info">
+                        <span id="currentTimeInfo" class="current-time"></span>
+                        <span id="visibleRange">
+                            <span class="font-semibold" id="visibleRangeTitle"></span>
+                            <span class="font-light" id="visibleRangeTime"></span>
+                        </span>
                     </div>
                     
-                    <!-- 중앙 고정 플레이헤드 (좁은 뷰 8시간 이하) -->
-                    <div id="playheadFixed" class="playhead-fixed">
+                    <div class="spacer"></div>
+                    <div class="ruler" id="ruler"></div>
+                    
+                    <div id="timelineViewport" class="timeline-viewport">
+                        <div id="timelineCanvas" class="timeline-canvas">
+                            <div id="segmentsContainer" class="segments-container"></div>
+                            <div id="playheadOnTimeline" class="playhead-on-timeline" style="display:none;"></div>
+                        </div>
+                        <div id="playheadFixed" class="playhead-fixed"></div>
                     </div>
-                  </div>
-                  
-                   <!-- 상태 메시지 -->
-                  <div id="status" class="status">대기중</div>
-                  
+                    
+                    <div id="status" class="status">대기중</div>
                 </div>
             </div>
         </div>
@@ -97,4 +86,3 @@
     <script src="/static/js/thirdparty/hls.min.js"></script>
 </body>
 </html>
-

@@ -52,6 +52,18 @@ func handleGet(c *gin.Context) {
 				"message": fmt.Sprintf("Method %s not supported", reqSlice[3]),
 			})
 		}
+	} else if len(reqSlice) == 3 {
+		switch reqSlice[2] {
+		case "html":
+			serveHTMLProxy(c)
+		case "resource":
+			serveResourceProxy(c)
+		default:
+			c.JSON(http.StatusOK, gin.H{
+				"status":  "error",
+				"message": fmt.Sprintf("Method %s not supported", reqSlice[3]),
+			})
+		}
 	}
 }
 
@@ -301,4 +313,142 @@ func serveKey(c *gin.Context) {
 	c.Header("Cache-Control", resp.Header.Get("Cache-Control"))
 	c.Status(resp.StatusCode)
 	io.Copy(c.Writer, resp.Body) // Key 파일 전달
+}
+
+// HTML 프록시 서빙
+func serveHTMLProxy(c *gin.Context) {
+	reqQuery := c.Request.URL.Query()
+	targetURL := reqQuery.Get("url")
+	if targetURL == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "url is required",
+		})
+		return
+	}
+
+	// HTTP 클라이언트로 원본 페이지 가져오기
+	msClient := getMediaServerClient()
+	resp, err := msClient.request("GET", targetURL, nil)
+	if err != nil {
+		log.Printf("Request failed: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "failed to api request",
+		})
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("target server returned error: %s", resp.Status)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "target server returned error",
+		})
+		return
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+
+	// HTML인 경우 리소스 경로 변경
+	if strings.Contains(contentType, "text/html") {
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Printf("failed to read response body: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  "error",
+				"message": "failed to read response body",
+			})
+			return
+		}
+
+		// HTML 파싱 및 리소스 경로 변경
+		// HTML 파싱, 스크립트 주입 및 리소스 경로 변경
+		modifiedHTML, err := injectProxyScriptAndRewriteHTML(string(bodyBytes), c)
+		if err != nil {
+			log.Printf("failed to rewrite HTML: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  "error",
+				"message": "failed to rewrite HTML",
+			})
+			return
+		}
+
+		c.Header("Content-Type", contentType)
+		c.Status(http.StatusOK)
+		c.Writer.Write([]byte(modifiedHTML))
+	} else {
+		// HTML이 아닌 경우 (CSS, JS, 이미지 등) 그대로 전달
+		for key, values := range resp.Header {
+			for _, value := range values {
+				c.Header(key, value)
+			}
+		}
+		c.Status(resp.StatusCode)
+		io.Copy(c.Writer, resp.Body)
+	}
+}
+
+func serveResourceProxy(c *gin.Context) {
+	reqQuery := c.Request.URL.Query()
+	resourceURL := reqQuery.Get("url")
+	if resourceURL == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "url is required",
+		})
+		return
+	}
+
+	msClient := getMediaServerClient()
+	resp, err := msClient.request("GET", resourceURL, nil)
+	if err != nil {
+		log.Printf("Request failed: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "failed to api request",
+		})
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("target server returned error: %s", resp.Status)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "target server returned error",
+		})
+		return
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+
+	// CSS 파일만 URL 변경 필요 (Javascript는 클라이언트 측에서 처리)
+	if strings.Contains(contentType, "text/css") {
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Printf("failed to read response body: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  "error",
+				"message": "failed to read response body",
+			})
+			return
+		}
+
+		modifiedCSS := rewriteCSSURLs(string(bodyBytes), c)
+		c.Header("Content-Type", contentType)
+		c.Status(http.StatusOK)
+		c.Writer.Write([]byte(modifiedCSS))
+		return // CSS면 변경 후 return
+	}
+
+	for key, values := range resp.Header {
+		for _, value := range values {
+			c.Writer.Header().Add(key, value)
+		}
+	}
+
+	c.Status(resp.StatusCode)
+	io.Copy(c.Writer, resp.Body)
+	return
 }

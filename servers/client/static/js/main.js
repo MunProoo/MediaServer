@@ -85,6 +85,11 @@ function switchTab(tabName) {
     if (tabName === 'recording') {
         initializeRecordingTab();
     }
+    
+    // Monitoring 탭인 경우 초기화
+    if (tabName === 'monitoring') {
+        initializeMonitoringTab();
+    }
 }
 
 // Recording 탭 초기화
@@ -95,16 +100,49 @@ function initializeRecordingTab() {
     }
 }
 
-// Streams 링크 클릭 이벤트 설정
+// Monitoring 탭 초기화
+function initializeMonitoringTab() {
+    const monitoringFrame = document.getElementById('monitoringFrame');
+    if (!monitoringFrame) return;
+    
+    // 프록시 URL 생성: /proxy/html?url=/monitoring/dashboard
+    const proxyURL = `/proxy/html?url=${encodeURIComponent('/monitoring/dashboard')}`;
+    // const proxyURL = 'https://14.14.14.2:8083/monitoring/dashboard';
+    
+    // iframe 로드 시 높이 조정 시도
+    monitoringFrame.onload = function() {
+        try {
+            // iframe 내부 문서에 접근 시도 (같은 도메인이면 가능)
+            const iframeDoc = monitoringFrame.contentDocument || monitoringFrame.contentWindow.document;
+            if (iframeDoc) {
+                // iframe 내부의 body 높이에 맞춰 조정
+                const bodyHeight = iframeDoc.body.scrollHeight;
+                const htmlHeight = iframeDoc.documentElement.scrollHeight;
+                const maxHeight = Math.max(bodyHeight, htmlHeight);
+                
+                if (maxHeight > 0) {
+                    monitoringFrame.style.height = maxHeight + 'px';
+                }
+            }
+        } catch (e) {
+            // CORS 문제로 접근 불가능한 경우 - 기본 높이 유지
+            console.log('Cannot access iframe content (CORS):', e);
+        }
+    };
+    
+    monitoringFrame.src = proxyURL;
+}
+
+// LiveView 링크 클릭 이벤트 설정 (모든 LiveView 링크에 적용)
 function setupCoreLiveViewLink() {
-    const coreLiveViewLink = document.getElementById('coreLiveViewLink');
-    if (coreLiveViewLink) {
-        coreLiveViewLink.addEventListener('click', function(e) {
+    const coreLiveViewLinks = document.querySelectorAll('.core-live-view-link');
+    coreLiveViewLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
             e.preventDefault();
             const address = window.location.origin + "/v1/coreLiveView?controls=1";
             window.open(address, "_blank");
         });
-    }
+    });
 }
 
 // WebSocket 연결
@@ -163,42 +201,167 @@ function connectWebSocket() {
 
 // Health 상태 업데이트
 function updateHealthStatus(data) {
+    // 서버 상태 업데이트
     const statusElement = document.getElementById('serverStatus');
-    
-    if (data.status === 'ok') {
-        statusElement.textContent = 'Online';
-        statusElement.style.color = '#4caf50';
-        
-        // Uptime 표시 (선택사항)
-        if (data.uptime !== undefined) {
-            const hours = Math.floor(data.uptime / 3600);
-            const minutes = Math.floor((data.uptime % 3600) / 60);
-            const seconds = data.uptime % 60;
-            // 필요시 uptime을 표시할 수 있음
+    if (statusElement) {
+        if (data.status === 'ok') {
+            statusElement.textContent = 'Online';
+            statusElement.style.color = '#4caf50';
+        } else {
+            statusElement.textContent = 'Offline';
+            statusElement.style.color = '#f44336';
         }
-    } else {
-        statusElement.textContent = 'Offline';
-        statusElement.style.color = '#f44336';
     }
+    
+    // 서버 업타임 업데이트
+    if (data.uptime !== undefined) {
+        updateServerUptime(data.uptime);
+    }
+    
+    // 스트림 통계 업데이트
+    if (data.streams && Array.isArray(data.streams)) {
+        updateStreamStats(data.streams);
+        updateRecentStreams(data.streams);
+    }
+}
+
+// 서버 업타임 표시
+function updateServerUptime(seconds) {
+    const uptimeElement = document.getElementById('serverUptime');
+    if (!uptimeElement) return;
+    
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    
+    let uptimeText = '';
+    if (days > 0) {
+        uptimeText = `${days}d ${hours}h`;
+    } else if (hours > 0) {
+        uptimeText = `${hours}h ${minutes}m`;
+    } else {
+        uptimeText = `${minutes}m`;
+    }
+    
+    uptimeElement.textContent = uptimeText;
+}
+
+// 스트림 통계 업데이트
+function updateStreamStats(streams) {
+    // 총 스트림 수
+    const totalStreamsElement = document.getElementById('totalStreams');
+    if (totalStreamsElement) {
+        totalStreamsElement.textContent = streams.length;
+    }
+    
+    // 활성 스트림 수 (녹화 중이거나 활성 상태인 스트림)
+    const activeStreamsInfo = document.getElementById('activeStreamsInfo');
+    if (activeStreamsInfo) {
+        const activeCount = streams.filter(s => s.recording).length;
+        activeStreamsInfo.textContent = `${activeCount} active`;
+    }
+    
+    // 녹화 중인 스트림 수
+    const recordingStreamsElement = document.getElementById('recordingStreams');
+    if (recordingStreamsElement) {
+        const recordingCount = streams.filter(s => s.recording).length;
+        recordingStreamsElement.textContent = recordingCount;
+    }
+}
+
+// 최근 스트림 목록 업데이트
+function updateRecentStreams(streams) {
+    const recentStreamsContainer = document.getElementById('recentStreams');
+    if (!recentStreamsContainer) return;
+    
+    if (streams.length === 0) {
+        recentStreamsContainer.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">📡</div>
+                <p>No streams configured</p>
+                <button class="btn btn-primary btn-small" onclick="showAddStreamModal()">Add Your First Stream</button>
+            </div>
+        `;
+        return;
+    }
+    
+    // 최대 6개만 표시
+    const recentStreams = streams.slice(0, 6);
+    
+    recentStreamsContainer.innerHTML = recentStreams.map(stream => `
+        <div class="recent-stream-card">
+            <div class="stream-card-header">
+                <h4>${escapeHtml(stream.name)}</h4>
+                <span class="stream-badge ${stream.recording ? 'badge-recording' : 'badge-inactive'}">
+                    ${stream.recording ? '🔴 Recording' : '⚪ Inactive'}
+                </span>
+            </div>
+            <div class="stream-card-body">
+                <p class="stream-info">
+                    <span class="info-label">IP:</span>
+                    <span class="info-value">${escapeHtml(stream.ip)}</span>
+                </p>
+                <p class="stream-info">
+                    <span class="info-label">Stream ID:</span>
+                    <span class="info-value stream-id">${escapeHtml(stream.streamID.substring(0, 8))}...</span>
+                </p>
+            </div>
+            <div class="stream-card-actions">
+                <button class="btn btn-small btn-primary" onclick="editStream('${stream.streamID}')">Edit</button>
+                <a href="#" class="btn btn-small btn-secondary tab-link" data-tab="recording" onclick="selectStreamForRecording('${stream.streamID}')">View</a>
+            </div>
+        </div>
+    `).join('');
+}
+
+// HTML 이스케이프
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// 스트림 선택 (Recording 탭으로 이동)
+function selectStreamForRecording(streamID) {
+    // Recording 탭으로 전환
+    switchTab('recording');
+    
+    // 스트림 선택은 recording.js에서 처리
+    setTimeout(() => {
+        if (typeof selectStreamById !== 'undefined') {
+            selectStreamById(streamID);
+        }
+    }, 300);
 }
 
 // 연결 상태 업데이트
 function updateConnectionStatus(status) {
-    const statusElement = document.getElementById('serverStatus');
+    const statusElement = document.getElementById('connectionStatus');
+    const infoElement = document.getElementById('connectionInfo');
+    
+    if (!statusElement) return;
     
     switch(status) {
-        case 'connected':
-            statusElement.textContent = 'Connecting...';
+        case 'connecting':
+            statusElement.textContent = 'Connecting';
             statusElement.style.color = '#ff9800';
+            if (infoElement) infoElement.textContent = 'WebSocket';
+            break;
+        case 'connected':
+            statusElement.textContent = 'Connected';
+            statusElement.style.color = '#4caf50';
+            if (infoElement) infoElement.textContent = 'WebSocket';
             break;
         case 'disconnected':
-            statusElement.textContent = 'Reconnecting...';
+            statusElement.textContent = 'Reconnecting';
             statusElement.style.color = '#ff9800';
+            if (infoElement) infoElement.textContent = 'WebSocket';
             break;
         case 'error':
         case 'failed':
-            statusElement.textContent = 'Connection Failed';
+            statusElement.textContent = 'Failed';
             statusElement.style.color = '#f44336';
+            if (infoElement) infoElement.textContent = 'WebSocket';
             break;
     }
 }
@@ -216,7 +379,6 @@ async function updateDashboard() {
 function updateStreamListFromWebSocket(streamsData) {
     if (streamsData && Array.isArray(streamsData)) {
         updateStreamList(streamsData);
-        document.getElementById('activeStreams').textContent = streamsData.length;
         
         // Recording 탭의 스트림 목록도 업데이트
         if (typeof updateRecordingStreamList === 'function') {

@@ -1,291 +1,423 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+/* ============================================
+   Recording Page Styles
+   ============================================ */
+
+:root {
+    --sidebar-width: 280px;
+    --control-height: 80px;
+    --timeline-height: 200px;
 }
 
-/* body 스타일은 index.html에서 상속받음 */
+/* ============================================
+   Recording Wrapper
+   ============================================ */
+.recording-page {
+    background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+    min-height: 100vh;
+}
+
+.recording-wrapper,
 .recording-container {
     display: flex;
-    height: 100%;
+    height: 100vh;
     width: 100%;
-    background-color: #f0f0f0;
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
-/* 왼쪽: 단말기 리스트 */
-.device-list-panel {
-    width: 200px;
-    background-color: #ffffff;
-    border-right: 1px solid #ddd;
+/* ============================================
+   Sidebar
+   ============================================ */
+.recording-sidebar {
+    width: var(--sidebar-width);
+    background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+    border-right: 2px solid #e9ecef;
     display: flex;
     flex-direction: column;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+    flex-shrink: 0;
 }
 
-.panel-header {
-    background-color: #325783;
-    color: #ffffff;
-    padding: 12px 15px;
-    font-size: 14px;
+.sidebar-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 24px;
+    font-size: 16px;
     font-weight: 700;
-    border-bottom: 1px solid #ddd;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
 }
 
-.panel-content {
+.sidebar-header h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.sidebar-content {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
-.list-header {
-    background-color: #f5f5f5;
-    padding: 8px 15px;
+.sidebar-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+.sidebar-list-header {
+    background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 12px 24px;
     font-size: 12px;
-    font-weight: 600;
-    color: #333;
-    border-bottom: 1px solid #ddd;
+    font-weight: 700;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
-.stream-list-items {
+.sidebar-list {
     padding: 0;
 }
 
 .stream-item {
-    padding: 12px 15px;
+    padding: 16px 24px;
     cursor: pointer;
-    border-bottom: 1px solid #eee;
-    font-size: 12px;
-    transition: background-color 0.2s;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    color: #495057;
+    position: relative;
+    font-weight: 500;
+}
+
+.stream-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transform: scaleY(0);
+    transition: transform 0.3s ease;
 }
 
 .stream-item:hover {
-    background-color: #f5f5f5;
+    background: linear-gradient(90deg, #f8f9fa 0%, #ffffff 100%);
+    padding-left: 28px;
+    color: #667eea;
+}
+
+.stream-item:hover::before {
+    transform: scaleY(1);
 }
 
 .stream-item.selected {
-    background-color: #e3f2fd;
-    font-weight: 600;
+    background: linear-gradient(90deg, #e3f2fd 0%, #f0f7ff 100%);
+    font-weight: 700;
+    color: #667eea;
+    padding-left: 28px;
+    box-shadow: inset 0 0 0 1px rgba(102, 126, 234, 0.2);
 }
 
-/* 오른쪽: 메인 콘텐츠 */
-.main-content-panel {
+.stream-item.selected::before {
+    transform: scaleY(1);
+}
+
+/* ============================================
+   Main Content Area
+   ============================================ */
+.recording-main {
     flex: 1;
     display: flex;
     flex-direction: column;
-    background-color: #ffffff;
-    min-width: 0; /* flex item이 부모를 넘지 않도록 */
+    background: #ffffff;
+    min-width: 0;
 }
 
-/* 녹화 파일 섹션 */
-.recording-file-section {
-    padding: 10px 15px;
-    border-bottom: 1px solid #ddd;
-    background-color: #fafafa;
-    flex-shrink: 0; /* 크기 고정 */
+/* ============================================
+   Control Bar
+   ============================================ */
+.recording-controls {
+    padding: 20px 24px;
+    border-bottom: 2px solid #e9ecef;
+    background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
 }
 
-.file-header {
+.control-group {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 16px;
 }
 
-.file-label {
-    font-size: 12px;
+.control-label {
+    font-size: 14px;
     font-weight: 700;
-    color: #353535;
+    color: #495057;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 120px;
 }
 
-.file-controls {
+.control-inputs {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-left: auto;
+    gap: 12px;
+    flex: 1;
 }
 
 .date-input {
-    padding: 5px 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 12px;
+    padding: 12px 16px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 14px;
     background-color: #ffffff;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    color: #495057;
+    flex: 1;
+    max-width: 250px;
 }
 
-.refresh-btn {
-    width: 24px;
-    height: 24px;
-    border: none;
-    background: none;
+.date-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.btn-icon-only {
+    width: 44px;
+    height: 44px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    background: #ffffff;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #666;
-    transition: color 0.2s;
+    color: #6c757d;
+    transition: all 0.3s ease;
 }
 
-.refresh-btn:hover {
-    color: #325783;
+.btn-icon-only:hover {
+    color: #667eea;
+    border-color: #667eea;
+    background: #f8f9ff;
+    transform: rotate(90deg);
 }
 
-/* 비디오 플레이어 섹션 */
-.video-player-section {
+.btn-icon-only:active {
+    transform: rotate(180deg);
+}
+
+/* ============================================
+   Video Player
+   ============================================ */
+.recording-player {
     flex: 1;
-    background-color: #FFF;
+    background: #FFF;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 15px; /* 좌우 패딩만 (타임라인과 가로 길이 맞추기) */
+    padding: 20px;
     min-height: 0;
-    flex-shrink: 1; /* 필요시 축소 가능 */
+    position: relative;
+    overflow: hidden;
+}
+
+.recording-player::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center, rgba(102, 126, 234, 0.05) 0%, transparent 70%);
+    pointer-events: none;
 }
 
 .video-player {
     width: 100%;
     height: 100%;
     object-fit: contain;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    background: #000;
 }
 
-/* 타임라인 섹션 */
-.timeline-section {
-    min-height: 150px;
-    height: auto; /* 내용에 따라 자동으로 높이 조정 */
-    padding: 10px 15px; /* 비디오 플레이어와 가로 길이 맞추기 */
-    border-top: 1px solid #ddd;
-    background-color: #fafafa;
+/* ============================================
+   Timeline
+   ============================================ */
+.recording-timeline {
+    min-height: var(--timeline-height);
+    height: auto;
+    background: #ffffff;
+    border-top: 2px solid #e9ecef;
+    flex-shrink: 0;
+    padding: 20px;
+}
+
+.timeline-container {
+    position: relative;
+    background: #2a2a2a;
+    padding: 16px;
+    border-radius: 12px;
+    height: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    flex-shrink: 0; /* 최소 높이 유지 */
 }
 
-/* 타임라인 컨테이너 */
-.timeline-container {
-  position: relative;
-  background: #2a2a2a;
-  padding: 8px;
-  border-radius: 8px;
-  overflow: hidden;
-  min-height: 120px; /* 최소 높이 설정 */
-  height: auto; /* 내용에 따라 자동 높이 조정 */
-  display: flex;
-  flex-direction: column;
-}
-
-/* 상단 정보 */
 .timeline-info {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-  /* padding: 0 10px; */
-  font-size: 12px;
-  color: #fff;
-  flex-shrink: 0; /* 크기 고정 */
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    font-size: 12px;
+    color: #fff;
+    flex-shrink: 0;
 }
 
-/* 타임라인 뷰포트 (스크롤하는 영역) */
-.timeline-viewport {
-  position: relative;
-  width: 100%;
-  min-height: 45px;
-  height: 45px;
-  flex-shrink: 0; /* 높이 고정 */
-  overflow: hidden;
-  border: 1px solid #3a3a3a;
-  border-radius: 4px;
-  background: #1a1a1a;
+.current-time {
+    font-size: 20px;
+    font-weight: 700;
+    color: #4facfe;
 }
 
-/* 타임라인 캔버스 (드래그 가능한 실제 타임라인) */
-.timeline-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  cursor: grab;
-  user-select: none;
+.visibleRange {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.timeline-canvas.dragging {
-  cursor: grabbing;
+.font-semibold {
+    letter-spacing: 0.1em;
+    font-weight: 600;
 }
 
-/* 시간 눈금 배경 */
+.font-light {
+    letter-spacing: 0.1em;
+    font-weight: 300;
+}
+
+.spacer {
+    height: 20px;
+    flex-shrink: 0;
+}
+
 .ruler {
     position: absolute;
-/*   width: 100%;*/
-    top:40px;  /* timeline-info 의  높이 */
-    left:20px;
-    right:20px;
+    top: 60px;
+    left: 20px;
+    right: 20px;
     height: 25px;
     z-index: 2;
     pointer-events: none;
     overflow: hidden;
-    
     margin-bottom: 0;
+    clip-path: inset(0);
 }
 
-/* 시간 라벨 */
 .time-label {
-  position: absolute;
-  top: 0;
-  font-size: 11px;
-  color: #999;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  line-height: 15px;
+    position: absolute;
+    top: 0;
+    font-size: 11px;
+    color: #999;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    line-height: 15px;
+    pointer-events: none;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-/* 시간 눈금선 */
 .time-tick {
-  position: absolute;
-    top: 18px;        /* 라벨 아래에서 시작 */
-  height: 7px; 
-  bottom: 0;
-  width: 1px;
-  background: #999;
+    position: absolute;
+    top: 18px;
+    height: 7px;
+    bottom: 0;
+    width: 1px;
+    background: #999;
 }
 
-/* 1시간 간격 */
 .time-tick.major {
-  background: #999;
-    top: 13px;        /* 라벨 아래에서 시작 */
-  height: 12px;     /* 조금 더 길이 */
-  width: 2px;
+    background: #999;
+    top: 13px;
+    height: 12px;
+    width: 2px;
 }
 
-/* 녹화 구간 컨테이너 */
+.timeline-viewport {
+    position: relative;
+    width: 100%;
+    height: 45px;
+    overflow: hidden;
+    border: 1px solid #3a3a3a;
+    border-radius: 4px;
+    background: #1a1a1a;
+    flex: 1;
+    min-height: 45px;
+}
+
+.timeline-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    cursor: grab;
+    user-select: none;
+}
+
+.timeline-canvas.dragging {
+    cursor: grabbing;
+}
+
 .segments-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
 }
 
-/* 녹화 구간 (파일 단위) */
 .segment {
-  position: absolute;
-  /* top: 25px; */
-  height: calc(100% - 10px); 
-  top: 0;
-  margin: 5px 0px 5px 0px;
-  background: #1580ff;
-  transition: opacity 0.2s;
-  border-radius: 5px;
+    position: absolute;
+    height: calc(100% - 10px);
+    top: 0;
+    margin: 5px 0px 5px 0px;
+    background: #1580ff;
+    transition: opacity 0.2s;
+    border-radius: 5px;
 }
 
 .segment:hover {
-  opacity: 0.8;
+    opacity: 0.8;
 }
 
-/* 공백인 세그먼트 */
 .segment-gap {
     position: absolute;
     top: 0;
     height: calc(100% - 10px);
     margin: 5px 0px 5px 0px;
-    background: repeating-linear-gradient(45deg,#3a3a3a,#3a3a3a 10px,#2a2a2a 10px,#2a2a2a 20px) !important;
-    border : 1px dashed #666;
+    background: repeating-linear-gradient(45deg, #3a3a3a, #3a3a3a 10px, #2a2a2a 10px, #2a2a2a 20px) !important;
+    border: 1px dashed #666;
     opacity: 0.6;
     pointer-events: none;
 }
@@ -294,324 +426,173 @@
     opacity: 0.8;
 }
 
-/* 플레이헤드 (뷰포트 중앙에 고정 - 좁은 뷰) */
 .playhead-fixed {
-    /*
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 3px;
-  background: #e60909;
-  z-index: 10;
-  pointer-events: none;
-  box-shadow: 0 0 8px rgba(52, 152, 219, 0.8);
-  transform: translateX(-50%);
-  */
     position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 2px;
-  background: #ff4d4f;
-  z-index: 10;
-  pointer-events: none;
-  box-shadow: 0 0 8px rgba(255, 77, 79, 0.8);
-  transform: translateX(-50%);
-  border-radius: 3px;
-}
-
-/*아래쪽 화살 */
-.playhead-fixed::before {
-    /*
-  content: '';
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-top: 8px solid #3498db;
-  */
-  
-  /*
-  content: '';
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 10px;
-  height: 10px;
-  background: #ff4d4f;
-  border-radius: 50% 50% 40% 40%;
-  */
-  /*
-    content: '';
-  position: absolute;
-  left: 50%;
-  top: -9px;
-  width: 10px;
-  height: 10px;
-  background: #ff4d4f;
-  transform: translateX(-50%) rotate(45deg);
-  border-radius: 3px;
-  */
-  
-}
-
-.playhead-fixed::after {
-    /*
-  content: '';
-  position: absolute;
-  bottom: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-bottom: 8px solid #3498db;
-  */
-      content: '';
-  position: absolute;
-  left: 50%;
-  bottom: -9px;
-  width: 10px;
-  height: 10px;
-  background: #ff4d4f;
-  transform: translateX(-50%) rotate(45deg); /* 정사각형 45도 회전 */
-  border-radius: 3px;
-}
-
-/* 플레이헤드 (타임라인 위 표시 - 넓은 뷰) */
-.playhead-on-timeline {
-/*
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: #e60909;
-  z-index: 10;
-  pointer-events: none;
-  box-shadow: 0 0 8px rgba(52, 152, 219, 0.8);
-  transform: translateX(-50%);
-  */
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: #ff4d4f;
-  z-index: 10;
-  pointer-events: none;
-  box-shadow: 0 0 8px rgba(255, 77, 79, 0.8);
-  transform: translateX(-50%);
-  border-radius: 3px;
-}
-
-/*아래쪽 화살 */
-.playhead-on-timeline::before {
-    /*
-  content: '';
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-top: 8px solid #3498db;
-  */
-  /*
-      content: '';
-  position: absolute;
-  left: 50%;
-  top: -9px;
-  width: 10px;
-  height: 10px;
-  background: #ff4d4f;
-  transform: translateX(-50%) rotate(45deg);
-  border-radius: 3px;
-  */
-}
-
-.playhead-on-timeline::after {
-    /*
-  content: '';
-  position: absolute;
-  bottom: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-bottom: 8px solid #3498db;
-  */
-      content: '';
-  position: absolute;
-  left: 50%;
-  bottom: -9px;
-  width: 10px;
-  height: 10px;
-  background: #ff4d4f;
-  transform: translateX(-50%) rotate(45deg); /* 정사각형 45도 회전 */
-  border-radius: 3px;
-}
-
-/* 현재 시간 표시 */
-.current-time-display {
-  position: absolute;
-  top: -35px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #3498db;
-  color: #fff;
-  padding: 5px 10px;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: bold;
-  white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  pointer-events: none;
-  z-index: 11;
-}
-
-/* 컨트롤 버튼 */
-.controls {
-  display: flex;
-  gap: 10px;
-  margin-top: 15px;
-  align-items: center;
-}
-
-.btn {
-  background: #3498db;
-  color: #fff;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.2s;
-}
-
-.btn:hover {
-  background: #2980b9;
-}
-
-.zoom-controls {
-  display: flex;
-  gap: 5px;
-  align-items: center;
-}
-
-.zoom-label {
-  font-size: 12px;
-  color: #999;
-  margin-right: 5px;
-}
-
-#zoomLevel {
-  font-size: 13px;
-  color: #fff;         /* 흰색 텍스트 */
-  font-weight: bold;   /* 굵게 */
-  min-width: 50px;     /* 최소 너비 보장 */
-  text-align: center;  /* 중앙 정렬 */
-}
-
-.info {
-  flex: 1;
-  text-align: right;
-  font-size: 14px;
-  color: #999;
-}
-
-.status {
-  padding: 5px;
-  /* margin-top: 10px; */
-  /* background: #1a1a1a;*/
-  /* border-radius: 4px; */
-  font-size: 12px;
-  color: #fff;
-  font-weight: 600;
-  flex-shrink: 0; /* 크기 고정 */
-}
-
-.status--alert {
-    color: red;
-}
-
-.instructions {
-  padding: 10px;
-  margin-top: 10px;
-  background: rgba(52, 152, 219, 0.1);
-  border-left: 3px solid #3498db;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #3498db;
-}
-
-.font-semibold {
-    letter-spacing: 0.1em; /* 글자 간격 약간 늘림 */
-    font-weight: 600;
-}
-
-.font-light {
-    letter-spacing: 0.1em; /* 글자 간격 약간 늘림 */
-    font-weight: 300;
-}
-
-.current-time {
-    font-size: 18px;
-    font-weight: 700;
-    color: #1580ff;
-}
-
-.spacer {
-    height: 20px;
-    flex-shrink: 0; /* 크기 고정 */
-}
-
-/* playhead 이전 세그먼트 (재생된 구간) */
-.segment.segment-past {
-  background: #1580ff; 
-}
-
-/* playhead 이후 세그먼트 (미래 구간) */
-.segment.segment-future {
-  background: #19385e;
-}
-
-/* playhead가 세그먼트 내부에 있을 때 (반으로 나눠서 구간 표시) */
-.segment.segment-current {
-  background: linear-gradient(
-    to right,
-    #1580ff 0%,
-    #1580ff var(--playhead-ratio, 50%),
-    #19385e var(--playhead-ratio, 50%),
-    #19385e 100%
-  ) ;
-  opacity: 1 ;
-}
-
-/* 스크롤바 스타일 */
-.stream-list-items::-webkit-scrollbar {
-    width: 6px;
-}
-
-.stream-list-items::-webkit-scrollbar-track {
-    background: #f1f1f1;
-}
-
-.stream-list-items::-webkit-scrollbar-thumb {
-    background: #888;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    background: #ff4d4f;
+    z-index: 10;
+    pointer-events: none;
+    box-shadow: 0 0 8px rgba(255, 77, 79, 0.8);
+    transform: translateX(-50%);
     border-radius: 3px;
 }
 
-.stream-list-items::-webkit-scrollbar-thumb:hover {
-    background: #555;
+.playhead-fixed::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -9px;
+    width: 10px;
+    height: 10px;
+    background: #ff4d4f;
+    transform: translateX(-50%) rotate(45deg);
+    border-radius: 3px;
 }
 
+.playhead-on-timeline {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #ff4d4f;
+    z-index: 10;
+    pointer-events: none;
+    box-shadow: 0 0 8px rgba(255, 77, 79, 0.8);
+    transform: translateX(-50%);
+    border-radius: 3px;
+}
+
+.playhead-on-timeline::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -9px;
+    width: 10px;
+    height: 10px;
+    background: #ff4d4f;
+    transform: translateX(-50%) rotate(45deg);
+    border-radius: 3px;
+}
+
+.segment.segment-past {
+    background: #1580ff;
+}
+
+.segment.segment-future {
+    background: #19385e;
+}
+
+.segment.segment-current {
+    background: linear-gradient(
+        to right,
+        #1580ff 0%,
+        #1580ff var(--playhead-ratio, 50%),
+        #19385e var(--playhead-ratio, 50%),
+        #19385e 100%
+    );
+    opacity: 1;
+}
+
+.status {
+    padding: 8px;
+    font-size: 13px;
+    color: #fff;
+    font-weight: 600;
+    margin-top: 12px;
+    flex-shrink: 0;
+}
+
+.status--alert {
+    color: #ff4d4f;
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+@media (max-width: 1024px) {
+    .recording-sidebar {
+        width: 220px;
+    }
+    
+    .sidebar-header {
+        padding: 16px 20px;
+        font-size: 14px;
+    }
+    
+    .stream-item {
+        padding: 14px 20px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 768px) {
+    .recording-wrapper,
+    .recording-container {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .recording-sidebar {
+        width: 100%;
+        max-height: 200px;
+        border-right: none;
+        border-bottom: 2px solid #e9ecef;
+    }
+    
+    .recording-main {
+        min-height: 500px;
+    }
+    
+    .recording-player {
+        min-height: 300px;
+    }
+    
+    .recording-timeline {
+        min-height: 150px;
+    }
+    
+    .control-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .control-label {
+        min-width: auto;
+    }
+    
+    .control-inputs {
+        width: 100%;
+    }
+    
+    .date-input {
+        max-width: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .recording-controls {
+        padding: 16px;
+    }
+    
+    .sidebar-header {
+        padding: 12px 16px;
+        font-size: 13px;
+    }
+    
+    .stream-item {
+        padding: 12px 16px;
+        font-size: 12px;
+    }
+    
+    .recording-timeline {
+        padding: 16px;
+    }
+    
+    .timeline-container {
+        padding: 12px;
+    }
+}
