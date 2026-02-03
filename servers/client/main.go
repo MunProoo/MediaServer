@@ -63,7 +63,7 @@ type Stream struct {
 var serverStartTime = time.Now()
 var appConfig *Config
 
-func main() {
+func StartServer() {
 	// Config 파일 로드
 	var err error
 	appConfig, err = loadConfig("config.json")
