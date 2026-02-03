@@ -85,10 +85,15 @@ func StartServer() {
 	}
 }
 
-// loadConfig config.json 파일 로드
+// loadConfig config.json 파일 로드 (없으면 기본 설정 생성)
 func loadConfig(filename string) (*Config, error) {
 	file, err := os.Open(filename)
 	if err != nil {
+		// 파일이 없으면 기본 설정 생성
+		if os.IsNotExist(err) {
+			log.Printf("Config file not found. Creating default config: %s", filename)
+			return createDefaultConfig(filename)
+		}
 		return nil, err
 	}
 	defer file.Close()
@@ -100,4 +105,35 @@ func loadConfig(filename string) (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+// createDefaultConfig 기본 설정 파일 생성
+func createDefaultConfig(filename string) (*Config, error) {
+	defaultConfig := &Config{
+		Server: ServerConfig{
+			ClientPort: 8080,
+			MediaServer: MediaServerConfig{
+				Address: "localhost",
+				Port:    8083,
+			},
+			TurnServer: TurnServerConfig{
+				Port: 8888,
+			},
+		},
+		StreamList: []Stream{},
+	}
+
+	// JSON으로 마샬링 (들여쓰기 포함)
+	configData, err := json.MarshalIndent(defaultConfig, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal default config: %v", err)
+	}
+
+	// 파일에 쓰기
+	if err := os.WriteFile(filename, configData, 0644); err != nil {
+		return nil, fmt.Errorf("failed to write default config file: %v", err)
+	}
+
+	log.Printf("Default config file created: %s", filename)
+	return defaultConfig, nil
 }
