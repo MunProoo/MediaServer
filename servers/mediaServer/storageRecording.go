@@ -90,12 +90,20 @@ func (obj *StorageST) StartRecording(streamID, channelID string) error {
 	tempFFmpegPath := filepath.Join(obj.Server.FFMPEGPath, ffmpegName)
 
 	// HLS FFmpeg 명령어 생성
+	// -map 0:v:0: 비디오 스트림 명시적 매핑
+	// -map 0:a:0?: 오디오 스트림 매핑 (있으면 포함, 없으면 무시)
+	// pcm_mulaw 같은 비표준 코덱은 AAC로 변환하여 브라우저 호환성 확보
 	command := exec.Command(tempFFmpegPath,
 		"-rtsp_transport", "tcp",
 		"-fflags", "+genpts+discardcorrupt",
 		"-i", rtspURL,
-
-		"-c", "copy", // 인코딩 부담 줄이기
+		"-map", "0:v:0", // 비디오 스트림 매핑
+		"-map", "0:a:0?", // 오디오 스트림 매핑 (있으면 포함)
+		"-c:v", "copy", // 비디오 복사
+		"-c:a", "aac", // 오디오를 AAC로 변환 (브라우저 호환성)
+		"-b:a", "128k", // 오디오 비트레이트
+		"-ar", "48000", // 오디오 샘플레이트 (표준)
+		"-ac", "2", // 스테레오로 변환 (모노인 경우)
 		"-f", "hls",
 		"-hls_time", "10", // 10초 단위 세그먼트
 		"-hls_list_size", "0", // playlist에 모든 세그먼트 기록
