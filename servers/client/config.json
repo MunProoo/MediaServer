@@ -18,10 +18,17 @@
       "recording": false
     },
     {
-      "name": "공공데이터",
+      "name": "공공데이터1",
       "ip": "ㄴ",
       "rtspURL": "rtsp://210.99.70.120:1935/live/cctv001.stream",
       "streamID": "ade82dec-4c7e-4390-5309-21fcffa79a63",
+      "recording": false
+    },
+    {
+      "name": "CCTV",
+      "ip": "1414",
+      "rtspURL": "rtsp://admin:1q2w3e4r!@14.14.14.114",
+      "streamID": "e1336ddc-0381-4b38-5f0b-f71e412f3e50",
       "recording": false
     }
   ]
