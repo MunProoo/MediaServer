@@ -83,7 +83,6 @@
                         <div class="stat-content">
                             <p class="stat-label">Total Streams</p>
                             <p class="stat-value" id="totalStreams">0</p>
-                            <p class="stat-change" id="activeStreamsInfo">0 active</p>
                         </div>
                     </div>
                     
@@ -279,56 +278,15 @@
 
             <!-- Monitoring Tab -->
             <section id="monitoring" class="tab-content">
-                <div class="page-header">
-                    <div>
-                        <h2 class="page-title">Monitoring</h2>
-                        <p class="page-subtitle">MediaServer monitoring dashboard</p>
-                    </div>
-                </div>
-                
                 <div class="monitoring-container">
-                    <iframe 
-                        id="monitoringFrame" 
-                        src="" 
-                        frameborder="0" 
-                        style="width: 100%; height: calc(100vh - 200px); min-height: 600px; border: none; border-radius: 8px; background: white;"
-                        title="MediaServer Monitoring">
-                    </iframe>
+                    <!-- iframe은 JavaScript에서 동적으로 생성/제거됩니다 -->
                 </div>
             </section>
 
             <!-- Settings Tab -->
             <section id="settings" class="tab-content">
-                <div class="page-header">
-                    <div>
-                        <h2 class="page-title">Settings</h2>
-                        <p class="page-subtitle">Configure your server preferences</p>
-                    </div>
-                </div>
-                
-                <div class="settings-container">
-                    <div class="settings-card">
-                        <h3 class="settings-section-title">Server Configuration</h3>
-                        <form id="settingsForm" class="settings-form">
-                            <div class="form-group">
-                                <label for="serverUrl" class="form-label">
-                                    <span class="label-icon">🌐</span>
-                                    Server URL
-                                </label>
-                                <input type="text" id="serverUrl" name="serverUrl" class="form-input" placeholder="http://localhost:8083">
-                            </div>
-                            <div class="form-group">
-                                <label for="apiKey" class="form-label">
-                                    <span class="label-icon">🔑</span>
-                                    API Key
-                                </label>
-                                <input type="password" id="apiKey" name="apiKey" class="form-input" placeholder="Enter your API key">
-                            </div>
-                            <div class="form-actions">
-                                <button type="submit" class="btn btn-primary">Save Settings</button>
-                            </div>
-                        </form>
-                    </div>
+                <div class="monitoring-container">
+                    <!-- iframe은 JavaScript에서 동적으로 생성/제거됩니다 -->
                 </div>
             </section>
         </main>
@@ -376,6 +334,10 @@
 
     <!-- HLS.js 라이브러리 -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="/static/core2/plugins/sweetalert2/sweetalert2.min.css">
+    <script src="/static/core2/plugins/sweetalert2/sweetalert2.min.js"></script>
+    <script src="/static/js/dataManager.js"></script>
     <script src="/static/js/main.js"></script>
     <script src="/static/js/recording.js"></script>
 </body>

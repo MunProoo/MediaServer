@@ -4,6 +4,8 @@ let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
 const RECONNECT_DELAY = 3000; // 3초
 
+let dataManager = DataManager.getInstance();
+
 // 초기화
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
@@ -102,35 +104,76 @@ function initializeRecordingTab() {
 
 // Monitoring 탭 초기화
 function initializeMonitoringTab() {
+    if(!dataManager.getMediaServer()) {
+        return;
+    }
+    
+    const monitoringContainer = document.querySelector('#monitoring .monitoring-container');
+    if (!monitoringContainer) return;
+    
+    // 이미 iframe이 있으면 제거 (중복 방지)
+    const existingFrame = monitoringContainer.querySelector('#monitoringFrame');
+    if (existingFrame) {
+        existingFrame.remove();
+    }
+    
+    // iframe 동적 생성
+    const iframe = document.createElement('iframe');
+    iframe.id = 'monitoringFrame';
+    iframe.src = dataManager.getMediaServer() + '/monitoring/dashboard';
+    iframe.setAttribute('frameborder', '0');
+    iframe.setAttribute('scrolling', 'yes');
+    iframe.style.width = '100%';
+    iframe.style.border = 'none';
+    iframe.style.background = 'white';
+    iframe.title = 'MediaServer Monitoring';
+    
+    monitoringContainer.appendChild(iframe);
+}
+
+// Monitoring 탭 정리 (탭을 떠날 때 호출)
+function cleanupMonitoringTab() {
     const monitoringFrame = document.getElementById('monitoringFrame');
-    if (!monitoringFrame) return;
+    if (monitoringFrame) {
+        monitoringFrame.remove();
+    }
+}
+
+// Settings 탭 초기화
+function initializeSettingsTab() {
+    if(!dataManager.getMediaServer()) {
+        return;
+    }
     
-    // 프록시 URL 생성: /proxy/html?url=/monitoring/dashboard
-    const proxyURL = `/proxy/html?url=${encodeURIComponent('/monitoring/dashboard')}`;
-    // const proxyURL = 'https://14.14.14.2:8083/monitoring/dashboard';
+    const settingsContainer = document.querySelector('#settings .monitoring-container');
+    if (!settingsContainer) return;
     
-    // iframe 로드 시 높이 조정 시도
-    monitoringFrame.onload = function() {
-        try {
-            // iframe 내부 문서에 접근 시도 (같은 도메인이면 가능)
-            const iframeDoc = monitoringFrame.contentDocument || monitoringFrame.contentWindow.document;
-            if (iframeDoc) {
-                // iframe 내부의 body 높이에 맞춰 조정
-                const bodyHeight = iframeDoc.body.scrollHeight;
-                const htmlHeight = iframeDoc.documentElement.scrollHeight;
-                const maxHeight = Math.max(bodyHeight, htmlHeight);
-                
-                if (maxHeight > 0) {
-                    monitoringFrame.style.height = maxHeight + 'px';
-                }
-            }
-        } catch (e) {
-            // CORS 문제로 접근 불가능한 경우 - 기본 높이 유지
-            console.log('Cannot access iframe content (CORS):', e);
-        }
-    };
+    // 이미 iframe이 있으면 제거 (중복 방지)
+    const existingFrame = settingsContainer.querySelector('#settingsFrame');
+    if (existingFrame) {
+        existingFrame.remove();
+    }
     
-    monitoringFrame.src = proxyURL;
+    // iframe 동적 생성
+    const iframe = document.createElement('iframe');
+    iframe.id = 'settingsFrame';
+    iframe.src = dataManager.getMediaServer() + '/pages/settings';
+    iframe.setAttribute('frameborder', '0');
+    iframe.setAttribute('scrolling', 'yes');
+    iframe.style.width = '100%';
+    iframe.style.border = 'none';
+    iframe.style.background = 'white';
+    iframe.title = 'MediaServer Settings';
+    
+    settingsContainer.appendChild(iframe);
+}
+
+// Settings 탭 정리 (탭을 떠날 때 호출)
+function cleanupSettingsTab() {
+    const settingsFrame = document.getElementById('settingsFrame');
+    if (settingsFrame) {
+        settingsFrame.remove();
+    }
 }
 
 // LiveView 링크 클릭 이벤트 설정 (모든 LiveView 링크에 적용)
@@ -164,6 +207,11 @@ function connectWebSocket() {
         healthWebSocket.onmessage = function(event) {
             try {
                 const data = JSON.parse(event.data);
+                
+                // DataManager에 데이터 저장
+                const dataManager = DataManager.getInstance();
+                dataManager.updateData(data);
+                
                 updateHealthStatus(data);
                 // 스트림 목록이 있으면 업데이트
                 if (data.streams && Array.isArray(data.streams)) {
@@ -201,10 +249,15 @@ function connectWebSocket() {
 
 // Health 상태 업데이트
 function updateHealthStatus(data) {
+    // DataManager에서 최신 데이터 가져오기
+    const dataManager = DataManager.getInstance();
+    const healthData = dataManager.getData();
+    
     // 서버 상태 업데이트
     const statusElement = document.getElementById('serverStatus');
     if (statusElement) {
-        if (data.status === 'ok') {
+        const status = healthData.status || data?.status;
+        if (status === 'ok') {
             statusElement.textContent = 'Online';
             statusElement.style.color = '#4caf50';
         } else {
@@ -214,8 +267,9 @@ function updateHealthStatus(data) {
     }
     
     // 서버 업타임 업데이트
-    if (data.uptime !== undefined) {
-        updateServerUptime(data.uptime);
+    const uptime = healthData.uptime !== undefined ? healthData.uptime : data?.uptime;
+    if (uptime !== undefined) {
+        updateServerUptime(uptime);
     }
     
     // 스트림 통계 업데이트
@@ -227,6 +281,12 @@ function updateHealthStatus(data) {
 
 // 서버 업타임 표시
 function updateServerUptime(seconds) {
+    // DataManager에서 업타임 가져오기 (파라미터가 없으면)
+    const dataManager = DataManager.getInstance();
+    const uptime = seconds !== undefined ? seconds : dataManager.getUptime();
+    
+    if (uptime === null || uptime === undefined) return;
+    
     const uptimeElement = document.getElementById('serverUptime');
     if (!uptimeElement) return;
     
@@ -247,7 +307,11 @@ function updateServerUptime(seconds) {
 }
 
 // 스트림 통계 업데이트
-function updateStreamStats(streams) {
+function updateStreamStats() {
+    // DataManager에서 스트림 목록 가져오기
+    const dataManager = DataManager.getInstance();
+    const streams = dataManager.getStreams();
+    
     // 총 스트림 수
     const totalStreamsElement = document.getElementById('totalStreams');
     if (totalStreamsElement) {
@@ -270,7 +334,11 @@ function updateStreamStats(streams) {
 }
 
 // 최근 스트림 목록 업데이트
-function updateRecentStreams(streams) {
+function updateRecentStreams() {
+    // DataManager에서 스트림 목록 가져오기
+    const dataManager = DataManager.getInstance();
+    const streams = dataManager.getStreams();
+    
     const recentStreamsContainer = document.getElementById('recentStreams');
     if (!recentStreamsContainer) return;
     
@@ -377,8 +445,18 @@ async function updateDashboard() {
 
 // WebSocket으로부터 스트림 목록 업데이트
 function updateStreamListFromWebSocket(streamsData) {
-    if (streamsData && Array.isArray(streamsData)) {
-        updateStreamList(streamsData);
+    // DataManager에서 최신 스트림 목록 가져오기
+    const dataManager = DataManager.getInstance();
+    const streams = dataManager.getStreams();
+    
+    // streamsData가 있으면 사용, 없으면 DataManager에서 가져오기
+    const streamsToUpdate = (streamsData && Array.isArray(streamsData) && streamsData.length > 0) 
+        ? streamsData 
+        : streams;
+    
+    if (streamsToUpdate.length > 0 || (streamsData && Array.isArray(streamsData))) {
+        // updateStreamList는 DataManager에서 가져오므로 파라미터 불필요
+        updateStreamList();
         
         // Recording 탭의 스트림 목록도 업데이트
         if (typeof updateRecordingStreamList === 'function') {
@@ -402,8 +480,13 @@ async function loadStreams() {
         const response = await fetch('/api/streams');
         const data = await response.json();
         if (data.streams) {
-            updateStreamList(data.streams);
-            document.getElementById('activeStreams').textContent = data.streams.length;
+            // DataManager에 데이터 저장
+            const dataManager = DataManager.getInstance();
+            dataManager.updateData(data);
+            
+            updateHealthStatus(data);
+            // updateStreamList는 DataManager에서 가져오므로 파라미터 불필요
+            updateStreamList();
         }
     } catch (error) {
         console.error('Failed to load streams:', error);
@@ -412,6 +495,10 @@ async function loadStreams() {
 
 // 스트림 목록 업데이트
 function updateStreamList(streams) {
+    // DataManager에서 스트림 목록 가져오기 (파라미터가 없거나 비어있으면)
+    const dataManager = DataManager.getInstance();
+    const streamsToUse = (streams && streams.length > 0) ? streams : dataManager.getStreams();
+    
     const streamList = document.getElementById('streamList');
     streamList.innerHTML = '';
     
