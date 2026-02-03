@@ -246,6 +246,10 @@
     }
     multiviewGrid('set', col);
     addEventListenerToVideo();
+    // 초기 생성 시 controls 비활성화
+    $('.video-class.empty').each(function() {
+      this.controls = false;
+    });
     $('.grid-maker').removeClass('active');
     $('.grid-maker[grid="' + col + '"]').addClass('active');
     if (memory != null) {
@@ -262,7 +266,15 @@
       let uuid = $(this).closest('.player').attr('data-uuid');
 
       this.addEventListener('loadeddata', () => {
-        _this.play();
+        _this.play().catch(err => {
+          console.warn('Auto-play failed:', err);
+          // 사용자 클릭 시 재생 및 unmute
+          document.addEventListener('click', function unmuteAndPlay() {
+            _this.muted = false;
+            _this.play().catch(e => console.warn('Play failed:', e));
+            document.removeEventListener('click', unmuteAndPlay);
+          }, { once: true });
+        });
         makePic(this, $(_this).closest('.player').attr('data-uuid'), 0);
         logger(index, '[video]: loadeddata');
       });
@@ -331,7 +343,15 @@
   });
 
   $("#videoPlayer")[0].addEventListener('loadeddata', () => {
-    $("#videoPlayer")[0].play();
+    $("#videoPlayer")[0].play().catch(err => {
+      console.warn('Auto-play failed:', err);
+      // 사용자 클릭 시 재생 및 unmute
+      document.addEventListener('click', function unmuteAndPlay() {
+        $("#videoPlayer")[0].muted = false;
+        $("#videoPlayer")[0].play().catch(e => console.warn('Play failed:', e));
+        document.removeEventListener('click', unmuteAndPlay);
+      }, { once: true });
+    });
     let browser = browserDetector();
     if (!browser.safari) {
       makePic();
@@ -365,6 +385,8 @@
     destoyPlayer(index);
     videoPlayerVar.removeClass('empty');
     videoPlayerVar.find('video').removeClass('empty');
+    // Video Play 시 controls 활성화
+    videoPlayerVar.find('video')[0].controls = true;
 
 
     let playerType = $('#defaultPlayer').val();
@@ -415,7 +437,9 @@
     }
     let type = videoPlayerVar.attr('data-player');
     videoPlayerVar.addClass('empty');
-    videoPlayerVar.find('video').addClass('empty')
+    videoPlayerVar.find('video').addClass('empty');
+    // remove-btn 클릭 시 controls 비활성화
+    videoPlayerVar.find('video')[0].controls = false;
 
     switch (type) {
       case 'webrtc':
@@ -459,11 +483,16 @@
     this.webrtc = null;
     this.webrtcSendChannel = null;
     this.webrtcSendChannelInterval = null;
+    this.mediaStream = null;
     this.uuid = uuid;
     this.video = videoPlayerVar.find('video')[0];
     this.channel = channel || 0;
     this.playWebrtc = function() {
         var _this = this;
+        // MediaStream 미리 생성 (play_webrtc.tmpl 방식)
+        this.mediaStream = new MediaStream();
+        this.video.srcObject = this.mediaStream;
+        
         this.webrtc = new RTCPeerConnection({
           iceServers: [{
             urls: presetOptions.turnUrl,
@@ -475,10 +504,45 @@
         this.webrtc.onnegotiationneeded = this.handleNegotiationNeeded.bind(this);
         this.webrtc.ontrack = function(event) {
           console.log(event.streams.length + ' track is delivered');
-          _this.video.srcObject = event.streams[0];
-          _this.video.play();
+          console.log('Track kind:', event.track.kind, 'Track id:', event.track.id);
+          console.log('Track readyState:', event.track.readyState);
+          
+          // MediaStream에 트랙 추가 (play_webrtc.tmpl 방식)
+          _this.mediaStream.addTrack(event.track);
+          
+          // 비디오 트랙인 경우 재생 시도
+          if (event.track.kind === 'video') {
+            console.log('Video track added, video srcObject tracks:', _this.video.srcObject.getTracks().length);
+            
+            // 비디오 이벤트 리스너 추가 (디버깅용)
+            _this.video.addEventListener('loadedmetadata', () => {
+              console.log('Video metadata loaded, dimensions:', _this.video.videoWidth, 'x', _this.video.videoHeight);
+            });
+            _this.video.addEventListener('playing', () => {
+              console.log('Video is playing');
+            });
+            _this.video.addEventListener('play', () => {
+              console.log('Video play event fired');
+            });
+            
+            // play() 호출 시 에러 처리
+            _this.video.play().catch(err => {
+              console.warn('Auto-play failed, will play after user interaction:', err);
+              // 사용자 클릭 시 재생 및 unmute
+              document.addEventListener('click', function unmuteAndPlay() {
+                _this.video.muted = false;
+                _this.video.play().catch(e => console.warn('Play failed:', e));
+                document.removeEventListener('click', unmuteAndPlay);
+              }, { once: true });
+            });
+          }
         }
+        // 비디오 트랜시버 추가
         this.webrtc.addTransceiver('video', {
+          'direction': 'sendrecv'
+        });
+        // 오디오 트랜시버 추가 (소리 출력을 위해)
+        this.webrtc.addTransceiver('audio', {
           'direction': 'sendrecv'
         });
         this.webrtcSendChannel = this.webrtc.createDataChannel('foo');
@@ -532,7 +596,13 @@
 
     this.destroy = function() {
       clearInterval(this.webrtcSendChannelInterval);
-      this.webrtc.close();
+      if (this.webrtc) {
+        this.webrtc.close();
+      }
+      if (this.mediaStream) {
+        this.mediaStream.getTracks().forEach(track => track.stop());
+        this.mediaStream = null;
+      }
       this.video.srcObject = null;
     }
   }

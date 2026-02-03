@@ -39,6 +39,7 @@
             background-color: #0f1419;
             color: #e4e6eb;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding-bottom: 100px;
         }
         .navbar {
             background-color: #1a1f2e !important;
@@ -155,6 +156,8 @@
             padding: 10px 15px;
             border-radius: 5px;
             font-size: 0.85rem;
+            z-index: 1000;
+            color: #e4e6eb;
         }
         .summary-box {
             text-align: center;
@@ -357,12 +360,11 @@
                                         <th>클라이언트</th>
                                         <th>녹화</th>
                                         <th>업타임</th>
-                                        <th>URL</th>
                                     </tr>
                                 </thead>
                                 <tbody id="streams-tbody">
                                     <tr>
-                                        <td colspan="7" class="text-center">데이터 로딩 중...</td>
+                                        <td colspan="6" class="text-center">데이터 로딩 중...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -589,7 +591,7 @@
             tbody.innerHTML = '';
 
             if (streams.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center">스트림이 없습니다</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">스트림이 없습니다</td></tr>';
                 return;
             }
 
@@ -612,7 +614,6 @@
                         <td>${channel.client_count}</td>
                         <td>${recordingBadge}</td>
                         <td>${channel.uptime || '-'}</td>
-                        <td><small class="text-muted">${channel.url.substring(0, 50)}...</small></td>
                     `;
                     
                     tbody.appendChild(row);

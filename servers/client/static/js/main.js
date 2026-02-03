@@ -57,6 +57,20 @@ function switchTab(tabName) {
         }
     }
     
+    // Monitoring 탭을 떠날 때 정리 (iframe 제거)
+    if (currentTabName === 'monitoring' && tabName !== 'monitoring') {
+        cleanupMonitoringTab();
+        // body 클래스도 제거
+        document.body.classList.remove('monitoring-active');
+    }
+    
+    // Settings 탭을 떠날 때 정리 (iframe 제거)
+    if (currentTabName === 'settings' && tabName !== 'settings') {
+        cleanupSettingsTab();
+        // body 클래스도 제거
+        document.body.classList.remove('monitoring-active');
+    }
+    
     // 모든 탭 컨텐츠 숨기기
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.remove('active');
@@ -91,6 +105,15 @@ function switchTab(tabName) {
     // Monitoring 탭인 경우 초기화
     if (tabName === 'monitoring') {
         initializeMonitoringTab();
+        // body에 클래스 추가하여 스크롤 제거
+        document.body.classList.add('monitoring-active');
+    }
+    
+    // Settings 탭인 경우 초기화
+    if (tabName === 'settings') {
+        initializeSettingsTab();
+        // body에 클래스 추가하여 스크롤 제거
+        document.body.classList.add('monitoring-active');
     }
 }
 
@@ -273,9 +296,10 @@ function updateHealthStatus(data) {
     }
     
     // 스트림 통계 업데이트
-    if (data.streams && Array.isArray(data.streams)) {
-        updateStreamStats(data.streams);
-        updateRecentStreams(data.streams);
+    const streams = healthData.streams && healthData.streams.length > 0 ? healthData.streams : (data?.streams || []);
+    if (streams.length > 0 || (data?.streams && Array.isArray(data.streams))) {
+        updateStreamStats();
+        updateRecentStreams();
     }
 }
 
@@ -290,9 +314,9 @@ function updateServerUptime(seconds) {
     const uptimeElement = document.getElementById('serverUptime');
     if (!uptimeElement) return;
     
-    const days = Math.floor(seconds / 86400);
-    const hours = Math.floor((seconds % 86400) / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
+    const days = Math.floor(uptime / 86400);
+    const hours = Math.floor((uptime % 86400) / 3600);
+    const minutes = Math.floor((uptime % 3600) / 60);
     
     let uptimeText = '';
     if (days > 0) {
@@ -460,7 +484,7 @@ function updateStreamListFromWebSocket(streamsData) {
         
         // Recording 탭의 스트림 목록도 업데이트
         if (typeof updateRecordingStreamList === 'function') {
-            updateRecordingStreamList(streamsData);
+            updateRecordingStreamList(streamsToUpdate);
         }
     }
 }
@@ -502,12 +526,12 @@ function updateStreamList(streams) {
     const streamList = document.getElementById('streamList');
     streamList.innerHTML = '';
     
-    if (streams.length === 0) {
+    if (streamsToUse.length === 0) {
         streamList.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No streams configured. Click "Add Stream" to create one.</p>';
         return;
     }
     
-    streams.forEach(stream => {
+    streamsToUse.forEach(stream => {
         const streamCard = document.createElement('div');
         streamCard.className = 'stream-card';
         streamCard.innerHTML = `
@@ -559,7 +583,12 @@ async function editStream(streamId) {
         }
     } catch (error) {
         console.error('Failed to load stream:', error);
-        alert('Failed to load stream data');
+        Swal.fire({
+            icon: 'error',
+            title: '오류',
+            text: '스트림 데이터를 불러오는데 실패했습니다.',
+            confirmButtonText: '확인'
+        });
     }
 }
 
@@ -591,20 +620,47 @@ async function toggleRecording(streamID, currentRecording) {
                 btnElement.setAttribute('onclick', `toggleRecording('${streamID}', ${newRecording})`);
             }
             
-            alert(newRecording ? 'Recording started successfully' : 'Recording stopped successfully');
+            Swal.fire({
+                icon: 'success',
+                title: '성공',
+                text: newRecording ? '녹화가 시작되었습니다.' : '녹화가 중지되었습니다.',
+                timer: 2000,
+                showConfirmButton: false
+            });
         } else {
             const data = await response.json();
-            alert(data.message || 'Failed to update recording');
+            Swal.fire({
+                icon: 'error',
+                title: '오류',
+                text: data.message || '녹화 상태 업데이트에 실패했습니다.',
+                confirmButtonText: '확인'
+            });
         }
     } catch (error) {
         console.error('Failed to toggle recording:', error);
-        alert('Failed to toggle recording');
+        Swal.fire({
+            icon: 'error',
+            title: '오류',
+            text: '녹화 상태를 변경하는데 실패했습니다.',
+            confirmButtonText: '확인'
+        });
     }
 }
 
 // 스트림 삭제
 async function deleteStream(streamId) {
-    if (!confirm('Are you sure you want to delete this stream?')) {
+    const result = await Swal.fire({
+        title: '스트림 삭제',
+        text: '이 스트림을 삭제하시겠습니까?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: '삭제',
+        cancelButtonText: '취소'
+    });
+    
+    if (!result.isConfirmed) {
         return;
     }
     
@@ -614,15 +670,31 @@ async function deleteStream(streamId) {
         });
         
         if (response.ok) {
-            alert('Stream deleted successfully');
+            Swal.fire({
+                icon: 'success',
+                title: '삭제 완료',
+                text: '스트림이 성공적으로 삭제되었습니다.',
+                timer: 2000,
+                showConfirmButton: false
+            });
             loadStreams();
         } else {
             const data = await response.json();
-            alert(data.message || 'Failed to delete stream');
+            Swal.fire({
+                icon: 'error',
+                title: '오류',
+                text: data.message || '스트림 삭제에 실패했습니다.',
+                confirmButtonText: '확인'
+            });
         }
     } catch (error) {
         console.error('Failed to delete stream:', error);
-        alert('Failed to delete stream');
+        Swal.fire({
+            icon: 'error',
+            title: '오류',
+            text: '스트림 삭제에 실패했습니다.',
+            confirmButtonText: '확인'
+        });
     }
 }
 
@@ -659,16 +731,32 @@ function setupStreamForm() {
             });
             
             if (response.ok) {
-                alert(isEdit ? 'Stream updated successfully' : 'Stream added successfully');
+                Swal.fire({
+                    icon: 'success',
+                    title: '성공',
+                    text: isEdit ? '스트림이 성공적으로 수정되었습니다.' : '스트림이 성공적으로 추가되었습니다.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
                 closeStreamModal();
                 loadStreams();
             } else {
                 const data = await response.json();
-                alert(data.message || 'Failed to save stream');
+                Swal.fire({
+                    icon: 'error',
+                    title: '오류',
+                    text: data.message || '스트림 저장에 실패했습니다.',
+                    confirmButtonText: '확인'
+                });
             }
         } catch (error) {
             console.error('Failed to save stream:', error);
-            alert('Failed to save stream');
+            Swal.fire({
+                icon: 'error',
+                title: '오류',
+                text: '스트림 저장에 실패했습니다.',
+                confirmButtonText: '확인'
+            });
         }
     });
 }
@@ -690,17 +778,3 @@ function loadSettings() {
         document.getElementById('apiKey').value = settings.apiKey || '';
     }
 }
-
-// 설정 저장
-document.getElementById('settingsForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const settings = {
-        serverUrl: document.getElementById('serverUrl').value,
-        apiKey: document.getElementById('apiKey').value
-    };
-    
-    localStorage.setItem('clientSettings', JSON.stringify(settings));
-    alert('Settings saved successfully!');
-});
-

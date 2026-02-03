@@ -216,6 +216,13 @@ body {
     animation: fadeIn 0.4s ease;
 }
 
+/* Monitoring 탭은 스크롤 처리 방식이 다름 */
+#monitoring.tab-content,
+#settings.tab-content {
+    overflow: visible;
+    height: 100%;
+}
+
 .tab-content.active {
     display: block;
 }
@@ -744,45 +751,63 @@ body {
 /* ============================================
    Monitoring
    ============================================ */
-.monitoring-container {
-    margin-top: var(--spacing-lg);
-    background: white;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-md);
+/* Monitoring 탭 활성화 시 body 스크롤 제거 */
+body.monitoring-active {
+    overflow: hidden;
+    height: 100vh;
+}
+
+body.monitoring-active .app-wrapper {
+    height: 100vh;
+    overflow: hidden;
+}
+
+body.monitoring-active .main-content {
+    height: calc(100vh - 80px); /* 헤더 높이 제외 */
     overflow: hidden;
     padding: 0;
+}
+
+body.monitoring-active .main-footer {
+    display: none;
+}
+
+#monitoring.tab-content.active,
+#settings.tab-content.active {
+    padding: 0;
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.monitoring-container {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: hidden;
     position: relative;
+    /* iframe 내부 스크롤 사용, 외부 스크롤 제거 */
+    flex: 1;
+    height: 100%;
+    min-height: 0;
 }
 
 .monitoring-container iframe {
     display: block;
     width: 100%;
-    height: 100vh; /* 충분히 큰 높이로 설정 */
-    min-height: 100vh;
+    height: 100%;
     border: none;
     background: white;
-    /* iframe 자체는 스크롤 없음 - 외부 페이지 스크롤만 사용 */
-    pointer-events: auto;
-}
-
-/* Monitoring 탭이 활성화될 때 스크롤 처리 */
-#monitoring.tab-content.active {
-    overflow-y: auto;
-    overflow-x: hidden;
-    max-height: calc(100vh - 180px);
-    padding: 0;
-}
-
-#monitoring.tab-content.active .monitoring-container {
-    margin-top: 0;
-    border-radius: 0;
-    box-shadow: none;
+    /* iframe 내부 스크롤 활성화 */
+    overflow: auto;
 }
 
 @media (max-width: 768px) {
-    .monitoring-container iframe {
-        height: calc(100vh - 160px);
-        min-height: 500px;
+    body.monitoring-active .main-content {
+        height: calc(100vh - 60px);
     }
 }
 

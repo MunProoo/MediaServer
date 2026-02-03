@@ -53,8 +53,8 @@ type StreamMetricsST struct {
 
 // ChannelMetrics 채널별 메트릭
 type ChannelMetrics struct {
-	ChannelID      string    `json:"channel_id"`
-	URL            string    `json:"url"`
+	ChannelID string `json:"channel_id"`
+	// URL            string    `json:"url"`
 	Status         string    `json:"status"` // "online", "offline"
 	ClientCount    int       `json:"client_count"`
 	IsRecording    bool      `json:"is_recording"`
@@ -295,8 +295,8 @@ func collectStreamMetrics() {
 
 		for channelID, channel := range stream.Channels {
 			channelMetric := &ChannelMetrics{
-				ChannelID:   channelID,
-				URL:         channel.URL,
+				ChannelID: channelID,
+				// URL:         channel.URL,
 				ClientCount: len(channel.clients),
 			}
 

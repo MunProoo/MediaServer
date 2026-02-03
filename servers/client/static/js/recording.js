@@ -1030,7 +1030,12 @@ function playHLS(url, seekTime, isLive) {
         }
         g.player.play();
     } else {
-        alert('HLS 재생을 지원하지 않는 브라우저입니다.');
+        Swal.fire({
+            icon: 'warning',
+            title: '브라우저 호환성',
+            text: 'HLS 재생을 지원하지 않는 브라우저입니다.',
+            confirmButtonText: '확인'
+        });
     }
 }
 
