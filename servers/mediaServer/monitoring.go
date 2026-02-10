@@ -123,6 +123,9 @@ var (
 		bytesRecv uint64
 		timestamp time.Time
 	}
+	// CPU 측정을 위한 비동기 처리
+	cpuPercentChan = make(chan float64, 1)
+	lastCPUPercent float64
 )
 
 // InitMonitoring 모니터링 시스템 초기화
@@ -142,8 +145,32 @@ func InitMonitoring() {
 
 	log.Printf("[INFO] [monitoring] [InitMonitoring] Monitoring system initialized")
 
+	// CPU 측정 별도 고루틴에서 수행(cpu 측정마다 블록되는 시간있으므로 비동기로)
+	go cpuMeasurementLoop()
+
 	// 주기적으로 메트릭 수집 (5초마다)
 	go StartMonitoringLoop()
+}
+
+// cpuMeasurementLoop CPU 측정을 별도 루프에서 수행 (비동기)
+func cpuMeasurementLoop() {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			cpuPercent, err := cpu.Percent(time.Second, false)
+			if err == nil && len(cpuPercent) > 0 {
+				select {
+				case cpuPercentChan <- cpuPercent[0]:
+					// 성공적으로 전송됨
+				default:
+					// 채널이 가득 차면 이전 값 유지 (논블로킹)
+				}
+			}
+		}
+	}
 }
 
 // StartMonitoringLoop 모니터링 루프 시작
@@ -178,12 +205,18 @@ func CollectMetrics() {
 	Monitoring.LastUpdate = time.Now()
 }
 
+var debugLogCounter int = 0
+
 // collectSystemMetrics 시스템 메트릭 수집
 func collectSystemMetrics() {
-	// CPU 사용률
-	cpuPercent, err := cpu.Percent(time.Second, false)
-	if err == nil && len(cpuPercent) > 0 {
-		Monitoring.SystemMetrics.CPUUsagePercent = cpuPercent[0]
+
+	select {
+	case cpuPercent := <-cpuPercentChan:
+		Monitoring.SystemMetrics.CPUUsagePercent = cpuPercent
+		lastCPUPercent = cpuPercent
+	default:
+		// 채널이 가득 차면 이전 값 유지 (논블로킹)
+		Monitoring.SystemMetrics.CPUUsagePercent = lastCPUPercent
 	}
 
 	// CPU 코어 수
@@ -216,7 +249,8 @@ func collectSystemMetrics() {
 			}
 
 			// 디버그 로그 (5번에 1번만 출력)
-			if Monitoring.SystemMetrics.CPUCores > 0 && int(time.Now().Unix())%5 == 0 {
+			debugLogCounter++
+			if Monitoring.SystemMetrics.CPUCores > 0 && debugLogCounter%5 == 0 {
 				log.Printf("[DEBUG] [monitoring] [collectSystemMetrics] [iface=%s] [sent=%d] [recv=%d]", stat.Name, stat.BytesSent, stat.BytesRecv)
 			}
 
