@@ -31,6 +31,37 @@ func HTTPAPIServerStreamWebRTC(c *gin.Context) {
 		log.Printf("[ERROR] [http_webrtc] [HTTPAPIServerStreamWebRTC] [StreamCodecs] stream=%s channel=%s: %s", c.Param("uuid"), c.Param("channel"), err.Error())
 		return
 	}
+
+	// 코덱이 있지만 RTSP가 OFFLINE 상태일 수 있음 (이전 연결의 코덱이 남아있는 경우)
+	// StreamChannelRun() 호출 후 RTSP 연결 시도가 완료될 시간을 대기하고 상태 확인
+	channelInfo, err := Storage.StreamChannelInfo(c.Param("uuid"), c.Param("channel"))
+	if err != nil {
+		c.IndentedJSON(500, Message{Status: 0, Payload: err.Error()})
+		log.Printf("[ERROR] [http_webrtc] [HTTPAPIServerStreamWebRTC] [StreamChannelInfo] stream=%s channel=%s: %s", c.Param("uuid"), c.Param("channel"), err.Error())
+		return
+	}
+
+	// RTSP가 OFFLINE 상태이면 연결 시도 중이거나 실패한 상태
+	// DialTimeout이 3초이므로 최소 3초 + 여유시간 대기
+	if channelInfo.Status == OFFLINE {
+		time.Sleep(4 * time.Second)
+
+		// 다시 상태 확인
+		channelInfo, err = Storage.StreamChannelInfo(c.Param("uuid"), c.Param("channel"))
+		if err != nil {
+			c.IndentedJSON(500, Message{Status: 0, Payload: err.Error()})
+			log.Printf("[ERROR] [http_webrtc] [HTTPAPIServerStreamWebRTC] [StreamChannelInfo] stream=%s channel=%s: %s", c.Param("uuid"), c.Param("channel"), err.Error())
+			return
+		}
+
+		// 여전히 OFFLINE이면 RTSP 연결 실패
+		if channelInfo.Status == OFFLINE {
+			c.IndentedJSON(500, Message{Status: 0, Payload: ErrorStreamChannelCodecNotFound.Error()})
+			log.Printf("[ERROR] [http_webrtc] [HTTPAPIServerStreamWebRTC] [StreamOffline] stream=%s channel=%s: RTSP connection failed or stream is offline", c.Param("uuid"), c.Param("channel"))
+			return
+		}
+	}
+
 	muxerWebRTC := webrtc.NewMuxer(webrtc.Options{ICEServers: Storage.ServerICEServers(), ICEUsername: Storage.ServerICEUsername(), ICECredential: Storage.ServerICECredential(), PortMin: Storage.ServerWebRTCPortMin(), PortMax: Storage.ServerWebRTCPortMax()})
 	answer, err := muxerWebRTC.WriteHeader(codecs, c.PostForm("data"))
 	if err != nil {
