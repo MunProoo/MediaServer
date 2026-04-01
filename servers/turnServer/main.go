@@ -14,6 +14,7 @@ import (
 
 	"log"
 
+	"github.com/pion/logging"
 	"github.com/pion/turn/v3"
 )
 
@@ -31,6 +32,58 @@ type TurnServerConfig struct {
 
 var config TurnServerConfig
 var server *turn.Server
+
+// stdPionLoggerFactory는 pion/turn의 LoggerFactory를 표준 log 패키지 스타일로 넘깁니다.
+type stdPionLoggerFactory struct {
+	defaultLevel logging.LogLevel
+}
+
+func (f stdPionLoggerFactory) NewLogger(scope string) logging.LeveledLogger {
+	lvl := f.defaultLevel
+	if lvl == 0 {
+		lvl = logging.LogLevelError
+	}
+	return &stdPionLeveledLogger{scope: scope, level: lvl}
+}
+
+type stdPionLeveledLogger struct {
+	scope string
+	level logging.LogLevel
+}
+
+func (l *stdPionLeveledLogger) logAt(msgLevel logging.LogLevel, levelTag, format string, args ...interface{}) {
+	if l.level < msgLevel {
+		return
+	}
+	log.Printf(levelTag+" [main] ["+l.scope+"] "+format, args...)
+}
+
+func (l *stdPionLeveledLogger) Trace(msg string) {
+	l.logAt(logging.LogLevelTrace, "[TRACE]", "%s", msg)
+}
+func (l *stdPionLeveledLogger) Tracef(format string, args ...interface{}) {
+	l.logAt(logging.LogLevelTrace, "[TRACE]", format, args...)
+}
+func (l *stdPionLeveledLogger) Debug(msg string) {
+	l.logAt(logging.LogLevelDebug, "[DEBUG]", "%s", msg)
+}
+func (l *stdPionLeveledLogger) Debugf(format string, args ...interface{}) {
+	l.logAt(logging.LogLevelDebug, "[DEBUG]", format, args...)
+}
+func (l *stdPionLeveledLogger) Info(msg string) { l.logAt(logging.LogLevelInfo, "[INFO]", "%s", msg) }
+func (l *stdPionLeveledLogger) Infof(format string, args ...interface{}) {
+	l.logAt(logging.LogLevelInfo, "[INFO]", format, args...)
+}
+func (l *stdPionLeveledLogger) Warn(msg string) { l.logAt(logging.LogLevelWarn, "[WARN]", "%s", msg) }
+func (l *stdPionLeveledLogger) Warnf(format string, args ...interface{}) {
+	l.logAt(logging.LogLevelWarn, "[WARN]", format, args...)
+}
+func (l *stdPionLeveledLogger) Error(msg string) {
+	l.logAt(logging.LogLevelError, "[ERROR]", "%s", msg)
+}
+func (l *stdPionLeveledLogger) Errorf(format string, args ...interface{}) {
+	l.logAt(logging.LogLevelError, "[ERROR]", format, args...)
+}
 
 func StartServer() {
 	// WireShark를 통해서 요청이 왔는지 확인 (BINDING REQUEST)
@@ -71,6 +124,8 @@ func StartServer() {
 
 	log.Printf("[INFO] [main] [StartServer] Start Turn Server")
 
+	serverRealm := realm
+
 	// Create a UDP listener to pass into pion/turn
 	// pion/turn itself doesn't allocate any UDP sockets, but lets the user pass them in
 	// this allows us to add logging, storage or modify inbound/outbound traffic
@@ -104,11 +159,12 @@ func StartServer() {
 
 	// TURN 서버 인스턴스 생성
 	server, err = turn.NewServer(turn.ServerConfig{
-		Realm: realm,
+		LoggerFactory: stdPionLoggerFactory{defaultLevel: logging.LogLevelError},
+		Realm:         realm,
 		// Set AuthHandler callback
 		// This is called every time a user tries to authenticate with the TURN server
 		// Return the key for that user, or false when no user is found
-		AuthHandler: func(username string, realm string, srcAddr net.Addr) ([]byte, bool) { // nolint: revive
+		AuthHandler: func(username string, reqRealm string, srcAddr net.Addr) ([]byte, bool) { // nolint: revive
 			// 연결 프로토콜 확인
 			protocol := "unknown"
 			clientID := srcAddr.String()
@@ -121,6 +177,16 @@ func StartServer() {
 				protocol = "UDP"
 				msg := fmt.Sprintf("Client connected - UDP %s:%d", udpAddr.IP, udpAddr.Port)
 				log.Printf("[INFO] [main] [AuthHandler] %s", msg)
+			}
+
+			key, userOK := usersMap[username]
+			if !userOK {
+				log.Printf("[WARN] [main] [AuthHandler] unknown user %q", username)
+				return nil, false
+			}
+			if reqRealm != serverRealm {
+				log.Printf("[WARN] [main] [AuthHandler] realm mismatch: got %q, want %q", reqRealm, serverRealm)
+				return nil, false
 			}
 
 			// 클라이언트 추적 정보 저장
@@ -138,7 +204,7 @@ func StartServer() {
 			}
 			clientsMutex.Unlock()
 
-			return usersMap[username], true
+			return key, true
 		},
 		// PacketConnConfigs is a list of UDP Listeners and the configuration around them
 		PacketConnConfigs: []turn.PacketConnConfig{

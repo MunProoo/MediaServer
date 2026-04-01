@@ -58,7 +58,7 @@ var globalClientPool = sync.Pool{
 // getMediaServerClient MediaServer 클라이언트 싱글톤 반환
 func getMediaServerClient() *MediaServerClient {
 	clientOnce.Do(func() {
-		baseURL := fmt.Sprintf("https://%s:%d", appConfig.Server.MediaServer.Address, appConfig.Server.MediaServer.Port)
+		baseURL := fmt.Sprintf("http://%s:%d", appConfig.Server.MediaServer.Address, appConfig.Server.MediaServer.Port)
 		mediaServerClient = &MediaServerClient{
 			baseURL:    baseURL,
 			httpClient: globalClientPool.Get().(*http.Client),

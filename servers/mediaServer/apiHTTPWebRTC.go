@@ -84,7 +84,7 @@ func HTTPAPIServerStreamWebRTC(c *gin.Context) {
 		}
 		defer Storage.ClientDelete(c.Param("uuid"), cid, c.Param("channel"))
 		var videoStart bool
-		noVideo := time.NewTimer(10 * time.Second)
+		noVideo := time.NewTimer(20 * time.Second)
 		for {
 			select {
 			case <-noVideo.C:

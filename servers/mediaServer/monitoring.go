@@ -251,7 +251,7 @@ func collectSystemMetrics() {
 			// 디버그 로그 (5번에 1번만 출력)
 			debugLogCounter++
 			if Monitoring.SystemMetrics.CPUCores > 0 && debugLogCounter%5 == 0 {
-				log.Printf("[DEBUG] [monitoring] [collectSystemMetrics] [iface=%s] [sent=%d] [recv=%d]", stat.Name, stat.BytesSent, stat.BytesRecv)
+				// log.Printf("[DEBUG] [monitoring] [collectSystemMetrics] [iface=%s] [sent=%d] [recv=%d]", stat.Name, stat.BytesSent, stat.BytesRecv)
 			}
 
 			currentBytesSent += stat.BytesSent
