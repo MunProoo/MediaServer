@@ -108,10 +108,10 @@ func StartServer() {
 
 	// 기본 포트 범위 설정
 	if minPort == 0 {
-		minPort = 49152 // IANA 권장 동적 포트 시작
+		minPort = 49751 // IANA 권장 동적 포트 시작
 	}
 	if maxPort == 0 {
-		maxPort = 49220 // 최대 포트
+		maxPort = 49999 // 최대 포트
 	}
 
 	if len(publicIP) == 0 {

@@ -133,7 +133,7 @@ func createDefaultConfig() StorageST {
 				Backend: "",
 			},
 			WebRTCPortMin: 49152,
-			WebRTCPortMax: 49220,
+			WebRTCPortMax: 49750,
 			FFMPEGPath:    "./external_tools/",
 			Maintenance: MaintenanceConfig{
 				DiskCheckInterval:      1, // 1시간마다 디스크 체크
